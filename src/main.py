@@ -130,7 +130,7 @@ class TextGeneratorApp(QMainWindow):
 
         # 파일 첨부용 버튼
 
-        self.birthday_label2 = QLabel('학생 등록')
+        self.birthday_label2 = QLabel('마을원 등록')
         self.birthday_layout2 = QWidget()
         file_layout2 = QHBoxLayout()
 
