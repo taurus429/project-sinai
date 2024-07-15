@@ -56,3 +56,13 @@ def get_week_of_month(date_string):
         week_number = (delta_days // 7) + 1
 
     return f"{year}년 {month}월 {week_number}주차"
+
+
+def convert_date_format(date_str):
+    # 입력 받은 날짜 문자열을 '-'로 분리
+    year, month, day = date_str.split('-')
+
+    # 새로운 형식으로 변환
+    formatted_date = f"{year}년 {int(month)}월 {int(day)}일"
+
+    return formatted_date

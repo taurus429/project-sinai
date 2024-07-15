@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLa
 from PyQt5.QtGui import QPainter, QColor, QFontMetrics, QPalette, QFontDatabase, QFont, QCursor
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 import util
-import test2
+import test2, namecard
 
 scrollbar_style = """
         QScrollBar:vertical {
@@ -56,10 +56,10 @@ scrollbar_style = """
 class RoundedRectLabel(QWidget):
     def __init__(self, text):
         super().__init__()
-        self.text = text
+        self.text = text[0]
         self.setMinimumSize(20, 20)  # 최소 크기 설정 (가로, 세로)
         self.setMouseTracking(True)  # 마우스 움직임 추적 활성화
-        self.tooltip_info = ["2024년 6월 30일"]
+        self.tooltip_info = [text[1]]
 
     def getToolTipText(self):
         text = f"<b>{self.tooltip_info[0]}</b><br>{self.text}"
@@ -127,7 +127,7 @@ class RoundedRectLabel(QWidget):
         return QSize(text_width+10, text_height+10)  # 위젯의 기본 크기 지정
 
 class StudentDetailsWindow(QWidget):
-    def __init__(self, 마을원_uid, res):
+    def __init__(self, 마을원정보, res, util):
         try:
             super().__init__()
             self.setWindowTitle("마을원 세부 정보")
@@ -146,49 +146,6 @@ class StudentDetailsWindow(QWidget):
             scroll_layout = QVBoxLayout(scroll_widget)
             scroll_layout.setContentsMargins(0, 0, 0, 0)  # 여백을 제거합니다.
             scroll_layout.setSpacing(0)  # 위젯 간의 간격을 제거합니다.
-            scrollbar_style = """
-                        QScrollBar:vertical {
-                            background-color: #F0F0F0;
-                            width: 15px;
-                            margin: 0px 3px 0px 3px;
-                        }
-                        QScrollBar::handle:vertical {
-                            background-color: #C0C0C0;
-                            min-height: 5px;
-                            border-radius: 5px;
-                        }
-                        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-                            background: none;
-                            border: none;
-                        }
-                        """
-            scroll_widget.setStyleSheet(scrollbar_style)
-
-            # Add QTextBrowser to display HTML content
-            html_content = """
-                        <html>
-                        <head>
-                            <style>
-                                body {
-                                    font-family: Arial, sans-serif;
-                                    background-color: #E0E0E0;
-                                    padding: 5px;
-                                }
-                                h1 {
-                                    text-align: center;
-                                    color: #333333;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>마을원 세부 정보</h1>
-                        </body>
-                        </html>
-                        """
-            text_browser = QTextBrowser()
-            text_browser.setHtml(html_content)
-            text_browser.setFixedHeight(50)
-            scroll_layout.addWidget(text_browser)
 
             for week_info in res.keys():
                 meetings = res[week_info]
@@ -218,6 +175,9 @@ class StudentDetailsWindow(QWidget):
 
             scroll_widget.setLayout(scroll_layout)
             scroll_area.setWidget(scroll_widget)
+            print(util.사랑장조회(마을원정보["uid"]))
+            main_layout.addWidget(namecard.BusinessCardWidget(마을원정보["이름"], util.사랑장조회(마을원정보["uid"]), 마을원정보["전화번호"],
+                                   str(마을원정보["생년월일"])))
 
             main_layout.addWidget(scroll_area)
             self.setLayout(main_layout)
@@ -339,8 +299,10 @@ class StudentListWindow(QMainWindow):
             if not weeks.__contains__(week):
                 weeks[week] = []
             if r[0] == 1:
-                weeks[week].append(r[1])
-        details_window = StudentDetailsWindow(마을원_uid, weeks)
+                date = test2.convert_date_format(r[2].split()[0])
+                weeks[week].append((r[1], date))
+        마을원정보 = self.util.마을원정보조회(마을원_uid)
+        details_window = StudentDetailsWindow(마을원정보, weeks, self.util)
         details_window.show()
         self.details_windows.append(details_window)
 

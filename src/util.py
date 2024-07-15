@@ -1,7 +1,7 @@
 import datetime
 import sqlite3
 import pandas as pd
-
+import test2
 
 class Util:
     def __init__(self):
@@ -13,7 +13,7 @@ class Util:
             "DROP TABLE IF EXISTS 참석;",
             "DROP TABLE IF EXISTS 모임;",
             "DROP TABLE IF EXISTS 사랑_소속;",
-            "DROP TABLE IF EXISTS 사랑;",
+            "DROP TABLE IF EXISTS 텀;",
             "DROP TABLE IF EXISTS 마을원;",
             "DROP TABLE IF EXISTS 모임_코드;"
         ]
@@ -30,27 +30,29 @@ class Util:
             );
             """,
             """
-            CREATE TABLE 사랑 (
+            CREATE TABLE 텀 (
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
-                사랑장_uid INTEGER,
-                설립일자 DATE NOT NULL,
-                FOREIGN KEY (사랑장_uid) REFERENCES 마을원(uid)
+                텀이름 VARCHAR(100) NOT NULL,
+                시작주일 DATE NOT NULL,
+                마지막주일 DATE NOT NULL
             );
             """,
             """
             CREATE TABLE 사랑_소속 (
-                마을원_uid INTEGER,
-                사랑_uid INTEGER,
-                PRIMARY KEY (마을원_uid, 사랑_uid),
-                FOREIGN KEY (마을원_uid) REFERENCES 마을원(uid),
-                FOREIGN KEY (사랑_uid) REFERENCES 사랑(uid)
+                uid INTEGER PRIMARY KEY AUTOINCREMENT,
+                사랑장_uid INTEGER NOT NULL,
+                사랑원_uid INTEGER NOT NULL,
+                날짜 DATE NOT NULL,
+                FOREIGN KEY (사랑장_uid) REFERENCES 마을원(uid),
+                FOREIGN KEY (사랑원_uid) REFERENCES 마을원(uid)
             );
             """,
             """
             CREATE TABLE 모임 (
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
                 모임_구분 VARCHAR(50) NOT NULL,
-                날짜 DATE NOT NULL
+                날짜 DATE NOT NULL,
+                상세 VARCHAR(100)
             );
             """,
             """
@@ -71,20 +73,22 @@ class Util:
             """
         ]
         # 초기 데이터
-        initial_data = [
-            ('자체예배',),
-            ('더원',),
-            ('사랑모임',),
-            ('금철',),
-            ('대예배',)
+        init_data = [
+            [('자체예배',), ('더원',), ('사랑모임',), ('금철',), ('대예배',)]
+            , [ ('23년 3텀', '2023-10-15', '2023-12-31'),
+                ('24년 1텀', '2024-01-07', '2024-03-31'),
+                ('24년 2텀', '2024-04-07', '2024-12-31') ]
         ]
         # 초기 데이터 삽입 쿼리
         insert_table_queries = [
-            """
-        INSERT INTO 모임_코드 (설명) VALUES (?)
+        """
+            INSERT INTO 모임_코드 (설명) VALUES (?)
+        """,
+        """
+            INSERT INTO 텀 (텀이름, 시작주일, 마지막주일) VALUES (?, ?, ?)
         """
         ]
-
+ 
         # 기존 테이블 삭제
         for query in drop_table_queries:
             self.cursor.execute(query)
@@ -94,9 +98,8 @@ class Util:
             self.cursor.execute(query)
         
         # 초기 데이터 입력
-        for query in insert_table_queries:
-            self.cursor.executemany(query, initial_data)
-
+        for i in range(len(init_data)):
+            self.cursor.executemany(insert_table_queries[i], init_data[i])
 
     def show(self):
 
@@ -164,6 +167,7 @@ class Util:
 
                     year = int(df.iloc[0, 0].split()[0][:4])
 
+
                     # 날짜 형식 맞춰서 열마다 달아주기
                     for col in range(3, df.shape[1], 4):
                         if not pd.isna(df.iloc[2, col]):
@@ -197,6 +201,17 @@ class Util:
                                 self.cursor.execute("INSERT INTO 모임 (모임_구분, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
                                 #(f"모임 추가: {모임구분}, {모임날짜}")
 
+                    # 사랑장
+                    사랑장 = df.iloc[1, df.shape[1] - 2].split()[1]
+                    사랑장_생년월일 = None
+                    for person in people_list:
+                        if person[1] == 사랑장:
+                            사랑장_생년월일 = person[2]
+                            break;
+                    self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (사랑장, 사랑장_생년월일))
+                    result = self.cursor.fetchone()
+                    사랑장_uid = result[0]
+
                     #마을원 데이터
                     for person in people_list:
                         이름 = person[1]
@@ -220,7 +235,22 @@ class Util:
                                     #print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
                                 else: #인서트
                                     self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)", (마을원_uid, 모임_uid, 참석여부))
-                                    #print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}")
+                                    #print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
+
+                            # 사랑 소속 데이터
+                            if col % 4 == 3 and not pd.isna(df.iloc[person[0]+3, col]):
+                                날짜 = df.iloc[2,col].split()[0]
+                                self.cursor.execute("SELECT uid FROM 사랑_소속 WHERE 사랑장_uid=? AND 사랑원_uid=? AND 날짜=?",
+                                                    (사랑장_uid, 마을원_uid, 날짜))
+                                사랑소속_uid = self.cursor.fetchone()
+                                if result:  # 업데이트
+                                    self.cursor.execute("UPDATE 사랑_소속 SET 사랑장_uid=?, 사랑원_uid=?, 날짜=? WHERE uid=?",
+                                                        (사랑장_uid, 마을원_uid, 날짜, 사랑소속_uid[0]))
+                                else:  # 인서트
+                                    self.cursor.execute("INSERT INTO 사랑_소속 (사랑장_uid, 사랑원_uid, 날짜) VALUES (?, ?, ?)",
+                                                        (사랑장_uid, 마을원_uid, 날짜))
+
+
 
                 print(f"{file_path} 저장 성공")
             except Exception as e:
@@ -328,6 +358,46 @@ class Util:
 
         return result_with_header
 
+    def 마을원정보조회(self, 마을원_uid):
+        try:
+            self.cursor.execute("SELECT * FROM 마을원 WHERE uid = ?", (마을원_uid,))
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchone()
+
+        columns = [desc[0] for desc in self.cursor.description]
+
+        result = dict()
+        for i in range(len(columns)):
+            result[columns[i]] = res[i]
+
+        return result
+
+    def 사랑장조회(self, 사랑원_uid):
+        try:
+            self.cursor.execute("SELECT DISTINCT "
+                                "m.이름 as 사랑장이름, t.텀이름, s.사랑장_uid = ? as 사랑장여부 "
+                                "FROM 사랑_소속 s "
+                                "JOIN 텀 t ON s.날짜 "
+                                "BETWEEN t.시작주일 AND t.마지막주일 "
+                                "JOIN 마을원 m ON s.사랑장_uid = m.uid "
+                                "WHERE s.사랑원_uid = ? "
+                                "ORDER BY t.텀이름 asc", (사랑원_uid, 사랑원_uid,))
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+
+
     def truncate(self, table):
         # 마을원 테이블 조회
         self.cursor.execute(f"DELETE FROM {table};")
@@ -337,15 +407,15 @@ class Util:
         self.conn.commit()
         self.conn.close()
 
-u = Util()
-u.init()
-u.마을원저장("C:/Users/85350/Desktop/마을원명단.xlsx")
-u.출석파일저장(["C:/Users/85350/Documents/카카오톡 받은 파일/6월 박찬호사랑 (1).xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/1월 박찬호사랑.xlsx"
-           ,"C:/Users/85350/Documents/카카오톡 받은 파일/5월 박찬호사랑.xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/4월 박찬호사랑.xlsx"
-           ,"C:/Users/85350/Documents/카카오톡 받은 파일/2월 박찬호사랑.xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/3월 박찬호사랑.xlsx"
-           ,"C:/Users/85350/Documents/카카오톡 받은 파일/12월 박찬호사랑.xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/11월 박찬호사랑.xlsx"
-           ,"C:/Users/85350/Documents/카카오톡 받은 파일/10월 박찬호사랑.xlsx"])
+# u = Util()
+# u.init()
+# u.마을원저장("C:/Users/85350/Desktop/마을원명단.xlsx")
+# u.출석파일저장(["C:/Users/85350/Documents/카카오톡 받은 파일/6월 박찬호사랑 (1).xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/1월 박찬호사랑.xlsx"
+#            ,"C:/Users/85350/Documents/카카오톡 받은 파일/5월 박찬호사랑.xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/4월 박찬호사랑.xlsx"
+#            ,"C:/Users/85350/Documents/카카오톡 받은 파일/2월 박찬호사랑.xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/3월 박찬호사랑.xlsx"
+#            ,"C:/Users/85350/Documents/카카오톡 받은 파일/12월 박찬호사랑.xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/11월 박찬호사랑.xlsx"
+#            ,"C:/Users/85350/Documents/카카오톡 받은 파일/10월 박찬호사랑.xlsx"])
 
-u.select_all("마을원")
-u.select_all("참석")
-u.select_all("모임")
+# u.select_all("마을원")
+# u.select_all("참석")
+# u.select_all("모임")
