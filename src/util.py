@@ -1,12 +1,14 @@
 import datetime
 import sqlite3
 import pandas as pd
-import test2
+import 날짜유틸
+
 
 class Util:
     def __init__(self):
         self.conn = sqlite3.connect('db.sqlite3')
         self.cursor = self.conn.cursor()
+
     def init(self):
         # 테이블 삭제 쿼리
         drop_table_queries = [
@@ -50,7 +52,7 @@ class Util:
             """
             CREATE TABLE 모임 (
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
-                모임_구분 VARCHAR(50) NOT NULL,
+                모임_코드 INTEGER NOT NULL,
                 날짜 DATE NOT NULL,
                 상세 VARCHAR(100)
             );
@@ -68,27 +70,29 @@ class Util:
             """
             CREATE TABLE 모임_코드 (
                 코드 INTEGER PRIMARY KEY AUTOINCREMENT,
-                설명 VARCHAR(50) NOT NULL
+                설명 VARCHAR(50) NOT NULL,
+                색깔 VARCHAR(10) NOT NULL
             )
             """
         ]
         # 초기 데이터
         init_data = [
-            [('자체예배',), ('더원',), ('사랑모임',), ('금철',), ('대예배',)]
-            , [ ('23년 3텀', '2023-10-15', '2023-12-31'),
-                ('24년 1텀', '2024-01-07', '2024-03-31'),
-                ('24년 2텀', '2024-04-07', '2024-12-31') ]
+            [('자체예배', '#ff595e'), ('더원', '#ff595e'), ('사랑모임', '#f79824'), ('금철', '#1982c4'), ('대예배', '#6a4c93'),
+             ('아웃팅', '#000000'), ('리트릿', '#000000'), ('큐티모임', '#000000'), ('선교모임', '#000000'), ('아웃리치', '#000000'), ('수련회', '#000000')]
+            , [('23년 3텀', '2023-10-15', '2023-12-31'),
+               ('24년 1텀', '2024-01-07', '2024-03-31'),
+               ('24년 2텀', '2024-04-07', '2024-12-31')]
         ]
         # 초기 데이터 삽입 쿼리
         insert_table_queries = [
-        """
-            INSERT INTO 모임_코드 (설명) VALUES (?)
+            """
+            INSERT INTO 모임_코드 (설명, 색깔) VALUES (?, ?)
         """,
-        """
+            """
             INSERT INTO 텀 (텀이름, 시작주일, 마지막주일) VALUES (?, ?, ?)
         """
         ]
- 
+
         # 기존 테이블 삭제
         for query in drop_table_queries:
             self.cursor.execute(query)
@@ -96,7 +100,7 @@ class Util:
         # 새 테이블 생성
         for query in create_table_queries:
             self.cursor.execute(query)
-        
+
         # 초기 데이터 입력
         for i in range(len(init_data)):
             self.cursor.executemany(insert_table_queries[i], init_data[i])
@@ -119,7 +123,6 @@ class Util:
                 print(f"  Column: {column[1]}, Type: {column[2]}")
             print()
 
-
     def save(self, file_path):
         try:
             # 파일 확장자에 따라 pandas로 파일 읽기
@@ -130,17 +133,14 @@ class Util:
             else:
                 raise ValueError("Unsupported file type")
 
-
             # 데이터프레임을 테이블로 저장 (테이블 이름: data_table)
             df.to_sql('data_table', self.conn, if_exists='replace', index=False)
-
 
             return True
 
         except Exception as e:
             print(f"Error: {e}")
             return False
-
 
     def read(self):
         try:
@@ -157,6 +157,7 @@ class Util:
 
     def 출석파일저장(self, file_paths):
         time = [(0, 12), (0, 15), (0, 17), (-2, 21)]
+        code2desc, desc2code = self.모임코드조회()
         for file_path in file_paths:
             try:
                 if file_path:
@@ -167,7 +168,6 @@ class Util:
 
                     year = int(df.iloc[0, 0].split()[0][:4])
 
-
                     # 날짜 형식 맞춰서 열마다 달아주기
                     for col in range(3, df.shape[1], 4):
                         if not pd.isna(df.iloc[2, col]):
@@ -177,29 +177,29 @@ class Util:
                             for i in range(4):
                                 time_date = date + datetime.timedelta(days=time[i][0], hours=time[i][1])
                                 full_date = time_date.strftime('%Y-%m-%d %H:%M:%S')
-                                df.iloc[2, col+i] = full_date
+                                df.iloc[2, col + i] = full_date
                     # 지난 금철 => 금철로 바꾸기
                     for col in range(3, df.shape[1]):
                         if df.iloc[3, col] == "지난 금철":
                             df.iloc[3, col] = "금철"
 
-                    #사랑원 데이터 추출
+                    # 사랑원 데이터 추출
                     people_list = []
                     for row in range(4, df.shape[0]):
-                        if df.iloc[row,0] == "합계":
+                        if df.iloc[row, 0] == "합계":
                             break
                         people_list.append((df.iloc[row, 0], df.iloc[row, 1], df.iloc[row, 2]))
 
-                    #모임 데이터 입력
+                    # 모임 데이터 입력
                     for col in range(3, df.shape[1]):
                         if not pd.isna(df.iloc[3, col]):
                             모임날짜 = df.iloc[2, col]
-                            모임구분 = df.iloc[3, col]
-                            self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_구분=? AND 날짜=?", (모임구분, 모임날짜))
+                            모임구분 = desc2code[df.iloc[3, col]][0]
+                            self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
                             result = self.cursor.fetchone()
                             if result is None:
-                                self.cursor.execute("INSERT INTO 모임 (모임_구분, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
-                                #(f"모임 추가: {모임구분}, {모임날짜}")
+                                self.cursor.execute("INSERT INTO 모임 (모임_코드, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
+                                # (f"모임 추가: {모임구분}, {모임날짜}")
 
                     # 사랑장
                     사랑장 = df.iloc[1, df.shape[1] - 2].split()[1]
@@ -212,7 +212,7 @@ class Util:
                     result = self.cursor.fetchone()
                     사랑장_uid = result[0]
 
-                    #마을원 데이터
+                    # 마을원 데이터
                     for person in people_list:
                         이름 = person[1]
                         생년월일 = person[2]
@@ -221,25 +221,28 @@ class Util:
                         마을원_uid = result[0]
                         for col in range(3, df.shape[1]):
                             if not pd.isna(df.iloc[3, col]):
-                                모임날짜 = df.iloc[2,col]
-                                모임구분 = df.iloc[3,col]
-                                참석여부 = df.iloc[person[0]+3, col]
-                                self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_구분=? AND 날짜=?", (모임구분, 모임날짜))
+                                모임날짜 = df.iloc[2, col]
+                                모임구분 = desc2code[df.iloc[3, col]][0]
+                                참석여부 = df.iloc[person[0] + 3, col]
+                                self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
                                 result = self.cursor.fetchone()
                                 모임_uid = result[0]
 
-                                self.cursor.execute("SELECT 참석여부 FROM 참석 WHERE 마을원_uid=? AND 모임_uid=?", (마을원_uid, 모임_uid))
+                                self.cursor.execute("SELECT 참석여부 FROM 참석 WHERE 마을원_uid=? AND 모임_uid=?",
+                                                    (마을원_uid, 모임_uid))
                                 result = self.cursor.fetchone()
-                                if result: #업데이트
-                                    self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?", (참석여부, 마을원_uid, 모임_uid))
-                                    #print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
-                                else: #인서트
-                                    self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)", (마을원_uid, 모임_uid, 참석여부))
-                                    #print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
+                                if result:  # 업데이트
+                                    self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?",
+                                                        (참석여부, 마을원_uid, 모임_uid))
+                                    # print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
+                                else:  # 인서트
+                                    self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
+                                                        (마을원_uid, 모임_uid, 참석여부))
+                                    # print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
 
                             # 사랑 소속 데이터
-                            if col % 4 == 3 and not pd.isna(df.iloc[person[0]+3, col]):
-                                날짜 = df.iloc[2,col].split()[0]
+                            if col % 4 == 3 and not pd.isna(df.iloc[person[0] + 3, col]):
+                                날짜 = df.iloc[2, col].split()[0]
                                 self.cursor.execute("SELECT uid FROM 사랑_소속 WHERE 사랑장_uid=? AND 사랑원_uid=? AND 날짜=?",
                                                     (사랑장_uid, 마을원_uid, 날짜))
                                 사랑소속_uid = self.cursor.fetchone()
@@ -250,15 +253,12 @@ class Util:
                                     self.cursor.execute("INSERT INTO 사랑_소속 (사랑장_uid, 사랑원_uid, 날짜) VALUES (?, ?, ?)",
                                                         (사랑장_uid, 마을원_uid, 날짜))
 
-
-
                 print(f"{file_path} 저장 성공")
             except Exception as e:
                 print(f"Error: {e}")
                 print(f"{file_path} 저장 중 에러 발생")
                 continue
         return True
-
 
     def 마을원저장(self, file_path):
         try:
@@ -272,9 +272,9 @@ class Util:
                 self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (이름, 생년월일))
                 result = self.cursor.fetchone()
                 if result is None:
-                    self.cursor.execute("INSERT INTO 마을원 (이름, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?)", (이름, 생년월일, 성별, 전화번호))
-                    #print(f"마을원 추가: {이름}, {생년월일}, {성별}, {전화번호}")
-
+                    self.cursor.execute("INSERT INTO 마을원 (이름, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?)",
+                                        (이름, 생년월일, 성별, 전화번호))
+                    # print(f"마을원 추가: {이름}, {생년월일}, {성별}, {전화번호}")
 
             return True
 
@@ -341,7 +341,7 @@ class Util:
 
     def 참석조회(self, 마을원_uid):
         try:
-            self.cursor.execute("SELECT A.참석여부, C.모임_구분, C.날짜 "
+            self.cursor.execute("SELECT A.참석여부, C.모임_코드, C.날짜 "
                                 "FROM 참석 A "
                                 "LEFT JOIN 마을원 B ON A.마을원_uid = B.uid "
                                 "LEFT JOIN 모임 C ON A.모임_uid = C.uid "
@@ -390,13 +390,51 @@ class Util:
         res = self.cursor.fetchall()
         columns = [desc[0] for desc in self.cursor.description]
 
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 모임조회(self):
+        try:
+            self.cursor.execute("SELECT "
+                                "모임.uid AS 모임_UID, "
+                                "모임.날짜 AS 날짜, "
+                                "모임.모임_코드 AS 모임_코드, "
+                                "SUM(참석.참석여부) AS 참석자수, "
+                                "ROUND(AVG(CASE WHEN 참석.참석여부 = 1 THEN 100 ELSE 0 END), 2) AS 참석률 "
+                                "FROM 모임 "
+                                "LEFT JOIN "
+                                "참석 ON 모임.uid = 참석.모임_uid "
+                                "GROUP BY 모임.uid, 모임.날짜, 모임.모임_코드 "
+                                "ORDER BY 날짜 DESC")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
 
         # 헤더와 데이터를 포함한 결과 생성
         result_with_header = [columns] + res
 
         return result_with_header
 
+    def 모임코드조회(self):
+        try:
+            self.cursor.execute("SELECT * FROM 모임_코드")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
 
+        code2desc = dict()
+        desc2code = dict()
+
+        for r in res:
+            code2desc[r[0]] = r
+            desc2code[r[1]] = r
+
+        return code2desc, desc2code
 
     def truncate(self, table):
         # 마을원 테이블 조회

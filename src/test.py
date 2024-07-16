@@ -1,10 +1,11 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QScrollArea, QGroupBox, \
-    QHBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QSpacerItem, QSizePolicy, QToolTip, QTextBrowser
+    QHBoxLayout, QTableWidget, QTableWidgetItem, QPushButton, QSpacerItem, QSizePolicy, QToolTip, QTextBrowser, QMenuBar
 from PyQt5.QtGui import QPainter, QColor, QFontMetrics, QPalette, QFontDatabase, QFont, QCursor
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 import util
-import test2, namecard
+import 날짜유틸, namecard
+from meeting import AttendanceTable
 
 scrollbar_style = """
         QScrollBar:vertical {
@@ -54,9 +55,11 @@ scrollbar_style = """
         """
 
 class RoundedRectLabel(QWidget):
-    def __init__(self, text):
+    def __init__(self, text, util):
         super().__init__()
-        self.text = text[0]
+        code2desc, desc2code = util.모임코드조회()
+        self.info = code2desc[text[0]]
+        self.text = self.info[1]
         self.setMinimumSize(20, 20)  # 최소 크기 설정 (가로, 세로)
         self.setMouseTracking(True)  # 마우스 움직임 추적 활성화
         self.tooltip_info = [text[1]]
@@ -97,18 +100,7 @@ class RoundedRectLabel(QWidget):
 
         rect = event.rect()  # 위젯의 사각형 영역
         rect.adjust(2, 2, -2, -2)  # 사각형을 약간 안쪽으로 줄임
-
-        icon_color = {
-            "자체예배": "#ff595e",
-            "더원": "#ff595e",
-            "사랑모임": "#f79824",
-            "금철": "#1982c4",
-            "대예배": "#6a4c93",
-        }
-        if icon_color.__contains__(self.text):
-            painter.setBrush(QColor(icon_color[self.text]))  # 직사각형 색상 설정
-        else:
-            painter.setBrush(QColor("#FFFFFF"))  # default 색상 설정
+        painter.setBrush(QColor(self.info[2]))  # default 색상 설정
 
         painter.drawRoundedRect(rect, 5, 5)  # 둥근 직사각형 그리기
 
@@ -146,7 +138,6 @@ class StudentDetailsWindow(QWidget):
             scroll_layout = QVBoxLayout(scroll_widget)
             scroll_layout.setContentsMargins(0, 0, 0, 0)  # 여백을 제거합니다.
             scroll_layout.setSpacing(0)  # 위젯 간의 간격을 제거합니다.
-
             for week_info in res.keys():
                 meetings = res[week_info]
                 group_box = QGroupBox(f"{week_info}")
@@ -160,9 +151,8 @@ class StudentDetailsWindow(QWidget):
 
                 # Horizontal layout to hold labels in a row
                 h_layout = QHBoxLayout()
-
                 for meeting in meetings:
-                    label = RoundedRectLabel(meeting)
+                    label = RoundedRectLabel(meeting, util)
                     label.setFixedSize(label.sizeHint())
                     h_layout.addWidget(label)
 
@@ -175,7 +165,6 @@ class StudentDetailsWindow(QWidget):
 
             scroll_widget.setLayout(scroll_layout)
             scroll_area.setWidget(scroll_widget)
-            print(util.사랑장조회(마을원정보["uid"]))
             main_layout.addWidget(namecard.BusinessCardWidget(마을원정보["이름"], util.사랑장조회(마을원정보["uid"]), 마을원정보["전화번호"],
                                    str(마을원정보["생년월일"])))
 
@@ -202,6 +191,17 @@ class StudentListWindow(QMainWindow):
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
+
+        self.menu_bar = QMenuBar(self)
+        self.setMenuBar(self.menu_bar)
+
+        file_menu = self.menu_bar.addMenu('파일')
+        file_submenu1 = file_menu.addAction('파일 서브메뉴 1')
+        file_submenu2 = file_menu.addAction('파일 서브메뉴 2')
+
+        settings_menu = self.menu_bar.addMenu('설정')
+        settings_submenu1 = settings_menu.addAction('설정 서브메뉴 1')
+        settings_submenu2 = settings_menu.addAction('설정 서브메뉴 2')
 
         self.layout = QVBoxLayout(self.central_widget)
 
@@ -241,6 +241,13 @@ class StudentListWindow(QMainWindow):
 
         self.original_data = [row[:] for row in self.students]  # Save original data
 
+        # Connect file_submenu1 to open AddMeetingWindow
+        file_submenu1.triggered.connect(self.open_add_meeting_window)
+
+    def open_add_meeting_window(self):
+        self.add_meeting_window = AttendanceTable()
+        self.add_meeting_window.show()
+        
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()
         if column_name == "이름":
@@ -295,11 +302,11 @@ class StudentListWindow(QMainWindow):
         res = self.util.참석조회(마을원_uid)
         weeks = dict()
         for r in res[1:]:
-            week = test2.get_week_of_month(r[2])
+            week = 날짜유틸.get_week_of_month(r[2])
             if not weeks.__contains__(week):
                 weeks[week] = []
             if r[0] == 1:
-                date = test2.convert_date_format(r[2].split()[0])
+                date = 날짜유틸.convert_date_format(r[2].split()[0])
                 weeks[week].append((r[1], date))
         마을원정보 = self.util.마을원정보조회(마을원_uid)
         details_window = StudentDetailsWindow(마을원정보, weeks, self.util)

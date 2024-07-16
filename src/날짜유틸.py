@@ -66,3 +66,10 @@ def convert_date_format(date_str):
     formatted_date = f"{year}년 {int(month)}월 {int(day)}일"
 
     return formatted_date
+
+def format_datetime(input_datetime):
+    # 입력 문자열을 datetime 객체로 변환
+    dt = datetime.strptime(input_datetime, "%Y-%m-%d %H:%M:%S")
+    # 원하는 형식으로 변환하여 반환
+    formatted_datetime = f"{dt.year % 100}년 {dt.month}월 {dt.day}일 {dt.hour}시"
+    return formatted_datetime
