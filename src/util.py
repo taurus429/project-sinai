@@ -77,8 +77,8 @@ class Util:
         ]
         # 초기 데이터
         init_data = [
-            [('자체예배', '#ff595e'), ('더원', '#ff595e'), ('사랑모임', '#f79824'), ('금철', '#1982c4'), ('대예배', '#6a4c93'),
-             ('아웃팅', '#000000'), ('리트릿', '#000000'), ('큐티모임', '#000000'), ('선교모임', '#000000'), ('아웃리치', '#000000'), ('수련회', '#000000')]
+            [('자체예배', '#ff595e'), ('더원', '#ff595e'), ('사랑모임', '#f79824'), ('금철', '#1982c4'), ('대예배', '#6a4c93'), ('주와나', '#000000'),
+             ('아웃팅', '#000000'), ('리트릿', '#000000'), ('큐티모임', '#000000'), ('선교모임', '#000000'), ('아웃리치', '#000000'), ('또래모임', '#000000'), ('수련회', '#000000')]
             , [('23년 3텀', '2023-10-15', '2023-12-31'),
                ('24년 1텀', '2024-01-07', '2024-03-31'),
                ('24년 2텀', '2024-04-07', '2024-12-31')]
@@ -275,6 +275,57 @@ class Util:
                     self.cursor.execute("INSERT INTO 마을원 (이름, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?)",
                                         (이름, 생년월일, 성별, 전화번호))
                     # print(f"마을원 추가: {이름}, {생년월일}, {성별}, {전화번호}")
+            return True
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
+
+    def 모임저장(self, file_path):
+        try:
+            if file_path.lower().endswith(('.xls', '.xlsx')):
+                df = pd.read_excel(file_path, header=None)
+            else:
+                raise ValueError("Unsupported file type")
+
+            code2desc, desc2code = self.모임코드조회()
+            meeting_names = df.iloc[0, 2:].values
+            meeting_dates = df.iloc[1, 2:].values
+
+            # Prepare the list to hold the tuples
+            attendance_list = []
+
+            # Iterate over each row of student data
+            for i in range(2, df.shape[0]):
+                name = df.iloc[i, 0].split()[1]
+                birth_date = str(int(df.iloc[i, 1]))
+                self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (name, birth_date))
+                마을원_uid = self.cursor.fetchone()[0]
+
+                # Iterate over each meeting column for the student
+                for j in range(2, df.shape[1]):
+                    attendance = df.iloc[i, j]
+                    if not pd.isna(attendance):  # Skip NaN values
+                        attendance_tuple = (name, birth_date, meeting_names[j - 2], meeting_dates[j - 2], attendance)
+                        모임날짜 = meeting_dates[j - 2]
+                        모임구분 = desc2code[meeting_names[j - 2]][0]
+                        self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
+                        모임_uid = self.cursor.fetchone()[0]
+                        if 모임_uid is None:
+                            self.cursor.execute("INSERT INTO 모임 (모임_코드, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
+                            self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
+                            모임_uid = self.cursor.fetchone()[0]
+                        self.cursor.execute("SELECT 참석여부 FROM 참석 WHERE 마을원_uid=? AND 모임_uid=?",
+                                            (마을원_uid, 모임_uid))
+                        result = self.cursor.fetchone()
+                        if result:  # 업데이트
+                            self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?",
+                                                (attendance, 마을원_uid, 모임_uid))
+                            # print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
+                        else:  # 인서트
+                            self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
+                                                (마을원_uid, 모임_uid, attendance))
+                        attendance_list.append(attendance_tuple)
 
             return True
 
@@ -436,6 +487,20 @@ class Util:
 
         return code2desc, desc2code
 
+    def 마을원전체조회(self):
+        try:
+            self.cursor.execute("SELECT * FROM 마을원")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
     def truncate(self, table):
         # 마을원 테이블 조회
         self.cursor.execute(f"DELETE FROM {table};")
@@ -445,7 +510,7 @@ class Util:
         self.conn.commit()
         self.conn.close()
 
-# u = Util()
+u = Util()
 # u.init()
 # u.마을원저장("C:/Users/85350/Desktop/마을원명단.xlsx")
 # u.출석파일저장(["C:/Users/85350/Documents/카카오톡 받은 파일/6월 박찬호사랑 (1).xlsx","C:/Users/85350/Documents/카카오톡 받은 파일/1월 박찬호사랑.xlsx"
@@ -457,3 +522,4 @@ class Util:
 # u.select_all("마을원")
 # u.select_all("참석")
 # u.select_all("모임")
+u.모임저장("C:/Users/85350/Desktop/참석.xlsx")

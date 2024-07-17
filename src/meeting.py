@@ -1,8 +1,9 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QScrollBar
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QScrollBar, QAction, QMenu
+from PyQt5.QtCore import Qt
 import util
 from 날짜유틸 import format_datetime
-
+from addMeeting import AddMeetingWindow
 
 class AttendanceTable(QMainWindow):
     def __init__(self):
@@ -21,6 +22,8 @@ class AttendanceTable(QMainWindow):
 
         # Fetch column headers from util.모임조회()
         모임목록 = self.util.모임조회()
+        code2desc, desc2code = self.util.모임코드조회()
+        print(code2desc)
         self.table_widget.setHorizontalHeaderLabels(모임목록[0][1:])
 
         # Sample data excluding UID
@@ -36,6 +39,8 @@ class AttendanceTable(QMainWindow):
                 if col_idx == 0:
                     # Format datetime for the first column
                     table_item.setText(format_datetime(item))
+                elif col_idx == 1:
+                    table_item.setText(code2desc[item][1])
                 elif isinstance(item, float):
                     # Handle float values
                     table_item.setText(f"{item:.2f}")
@@ -47,6 +52,9 @@ class AttendanceTable(QMainWindow):
 
         # Resize window based on table width
         self.resize_to_table_width()
+
+        # Create menu
+        self.create_menu()
 
     def resize_to_table_width(self):
         total_width = 0
@@ -64,6 +72,23 @@ class AttendanceTable(QMainWindow):
 
         self.resize(total_width, self.height())
 
+    def create_menu(self):
+        # Create a menu bar
+        menubar = self.menuBar()
+
+        # Create "등록" menu
+        register_menu = menubar.addMenu("등록")
+
+        # Create "신규 모임 등록" action
+        new_meeting_action = QAction("신규 모임 등록", self)
+        new_meeting_action.triggered.connect(self.open_add_meeting_window)
+
+        # Add action to "등록" menu
+        register_menu.addAction(new_meeting_action)
+
+    def open_add_meeting_window(self):
+        self.add_meeting_window = AddMeetingWindow()
+        self.add_meeting_window.show()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
