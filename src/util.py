@@ -536,15 +536,21 @@ class Util:
         try:
             for 모임코드 in self.모임코드조회()[0].keys():
                 self.cursor.execute("""
-                    SELECT 모임.모임_코드,
-                           COUNT(*) AS 참석횟수, 
-                           RANK() OVER (ORDER BY COUNT(*) DESC) AS 참석횟수랭킹
-                    FROM 참석 
-                    JOIN 모임 ON 참석.모임_uid = 모임.uid
-                    WHERE 모임.모임_코드 = ? 
-                      AND 참석.참석여부 = TRUE
-                    GROUP BY 참석.마을원_uid
-                    HAVING 참석.마을원_uid = ?
+                    WITH RankedAttendance AS (
+                        SELECT 
+                            참석.마을원_uid,
+                            모임.모임_코드,
+                            COUNT(*) AS 참석횟수, 
+                            RANK() OVER (ORDER BY COUNT(*) DESC) AS 참석횟수랭킹
+                        FROM 참석 
+                        JOIN 모임 ON 참석.모임_uid = 모임.uid
+                        WHERE 모임.모임_코드 = ? 
+                          AND 참석.참석여부 = TRUE
+                        GROUP BY 참석.마을원_uid
+                    )
+                    SELECT 모임_코드, 참석횟수, 참석횟수랭킹
+                    FROM RankedAttendance
+                    WHERE 마을원_uid = ?;
                 """, (모임코드, 마을원_uid,))
                 참석횟수.append(self.cursor.fetchall())
         except Exception as e:
@@ -554,13 +560,22 @@ class Util:
         참석률 = []
         try:
             for 모임코드 in self.모임코드조회()[0].keys():
-                self.cursor.execute("SELECT (SUM(CASE WHEN 참석.참석여부 = TRUE THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) * 100 AS 참석률, "
-                                    "RANK() OVER (ORDER BY (SUM(CASE WHEN 참석.참석여부 = TRUE THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) DESC) AS 참석률랭킹 "
-                                    "FROM 참석 "
-                                    "JOIN 모임 ON 참석.모임_uid = 모임.uid "
-                                    "WHERE 모임.모임_코드 = ? "
-                                    "GROUP BY 참석.마을원_uid "
-                                    "HAVING 참석.마을원_uid = ? ", (모임코드, 마을원_uid,))
+                self.cursor.execute('''
+                                    WITH AttendanceRates AS (
+                                        SELECT 
+                                            참석.마을원_uid,
+                                            (SUM(CASE WHEN 참석.참석여부 = TRUE THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) * 100 AS 참석률,
+                                            RANK() OVER (ORDER BY (SUM(CASE WHEN 참석.참석여부 = TRUE THEN 1 ELSE 0 END) * 1.0 / COUNT(*)) DESC) AS 참석률랭킹
+                                        FROM 참석 
+                                        JOIN 모임 ON 참석.모임_uid = 모임.uid
+                                        WHERE 모임.모임_코드 = ?
+                                        GROUP BY 참석.마을원_uid
+                                    )
+                                    SELECT 참석률, 참석률랭킹
+                                    FROM AttendanceRates
+                                    WHERE 마을원_uid = ?;
+
+                ''', (모임코드, 마을원_uid,))
                 참석률.append(self.cursor.fetchall())
         except Exception as e:
             print(f"Error: {e}")
@@ -568,8 +583,6 @@ class Util:
         res = []
         for i in range(len(참석횟수)):
             res.append(참석횟수[i]+참석률[i])
-        for r in res:
-            print(r)
         columns = [desc[0] for desc in self.cursor.description]
 
         # 헤더와 데이터를 포함한 결과 생성
@@ -587,7 +600,6 @@ class Util:
         self.conn.close()
 
 u = Util()
-u.참석통계(4)
 # u.init()
 # u.마을원저장("C:/Users/85350/Desktop/마을원명단.xlsx")
 # dirname = "../data/사랑보고서"

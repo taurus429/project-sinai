@@ -31,7 +31,7 @@ class StudentDetailsWindow(QWidget):
             splitter = QSplitter(Qt.Horizontal)  # 수평 방향으로 레이아웃을 나눕니다.
 
             # 통계 테이블을 왼쪽에 추가
-            stats_table = StatisticsTableWidget()  # 통계 테이블 위젯 사용
+            stats_table = StatisticsTableWidget(마을원정보["uid"], util)  # 통계 테이블 위젯 사용
             splitter.addWidget(stats_table)
 
             # 주간 정보를 표시하는 스크롤 영역을 오른쪽에 추가
@@ -42,7 +42,7 @@ class StudentDetailsWindow(QWidget):
             main_layout.addWidget(splitter)
 
             # 초기 크기 비율 설정 (1:2 비율로 통계 테이블과 스크롤 영역 크기 설정)
-            splitter.setSizes([200, 600])
+            splitter.setSizes([600, 600])
 
             self.setLayout(main_layout)
         except Exception as e:

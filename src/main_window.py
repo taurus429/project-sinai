@@ -25,7 +25,7 @@ class StudentListWindow(QMainWindow):
         super().__init__()
         self.util = util.Util()
         self.setWindowTitle("마을원 명단")
-        self.setGeometry(100, 100, 800, 600)  # Increase width and height
+        self.setGeometry(100, 100, 700, 1000)  # Increase width and height
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
