@@ -1,8 +1,57 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QPushButton,
-                             QColorDialog, QLabel, QHBoxLayout, QLineEdit, QCheckBox)
-from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QColorDialog,
+    QLabel,
+    QHBoxLayout,
+    QLineEdit,
+    QCheckBox
+)
+from PyQt5.QtGui import QColor, QPainter, QPainterPath
+from PyQt5.QtCore import Qt, QRectF
+from util import Util
+
+class CustomLabel(QLabel):
+    def __init__(self, text='', bgcolor='#FFFFFF', fgcolor='#000000', parent=None):
+        super().__init__(parent)
+        self.text = text
+        self.bgcolor = bgcolor
+        self.fgcolor = fgcolor
+
+
+    def setColors(self, bgcolor, fgcolor):
+        self.bgcolor = bgcolor
+        self.fgcolor = fgcolor
+        self.update()
+
+    def setText(self, text):
+        self.text = text
+        self.update()
+
+    def paintEvent(self, event):
+        # QPainter를 사용하여 둥근 모서리의 사각형 그리기
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 활성화
+
+        # 배경색 설정
+        painter.setBrush(QColor(self.bgcolor))
+        painter.setPen(Qt.NoPen)  # 윤곽선 없앰
+
+        # 둥근 모서리 사각형 경로 생성
+        rect_path = QPainterPath()
+        rect_path.addRoundedRect(QRectF(self.rect()), 10, 10)  # 10은 모서리 둥글기 정도
+
+        # 사각형 그리기
+        painter.drawPath(rect_path)
+
+        # 글자색 설정
+        painter.setPen(QColor(self.fgcolor))
+        painter.drawText(self.rect(), Qt.AlignCenter, self.text)  # 중앙 정렬로 텍스트 그리기
 
 
 class MeetingItem(QWidget):
@@ -15,7 +64,9 @@ class MeetingItem(QWidget):
 
         self.nameEdit = QLineEdit(name)
         self.nameEdit.setFixedWidth(150)
+        self.nameEdit.textChanged.connect(self.updateName)  # 이름 변경시 미리보기 업데이트
 
+        # 배경색 선택 라벨
         self.bgColorLabel = QLabel()
         self.bgColorLabel.setText(bgcolor)
         self.bgColorLabel.setStyleSheet(f'background-color: {bgcolor}')
@@ -23,6 +74,7 @@ class MeetingItem(QWidget):
         self.bgColorLabel.setAlignment(Qt.AlignCenter)
         self.bgColorLabel.mousePressEvent = self.changeBgColor
 
+        # 글자색 선택 라벨
         self.fgColorLabel = QLabel()
         self.fgColorLabel.setText(fgcolor)
         self.fgColorLabel.setStyleSheet(f'background-color: {fgcolor}')
@@ -30,9 +82,9 @@ class MeetingItem(QWidget):
         self.fgColorLabel.setAlignment(Qt.AlignCenter)
         self.fgColorLabel.mousePressEvent = self.changeFgColor
 
-        self.previewLabel = QLabel('미리보기')
-        self.previewLabel.setFixedWidth(100)
-        self.updatePreview(bgcolor, fgcolor)
+        # CustomLabel을 사용한 미리보기
+        self.previewLabel = CustomLabel(name, bgcolor, fgcolor)
+        self.previewLabel.setFixedSize(100, 30)
 
         self.deleteCheckBox = QCheckBox()
 
@@ -49,17 +101,22 @@ class MeetingItem(QWidget):
         if color.isValid():
             self.bgColorLabel.setText(color.name())
             self.bgColorLabel.setStyleSheet(f'background-color: {color.name()}')
-            self.updatePreview(color.name(), self.fgColorLabel.text())
+            self.updatePreview(self.nameEdit.text(), color.name(), self.fgColorLabel.text())
 
     def changeFgColor(self, event):
         color = QColorDialog.getColor()
         if color.isValid():
             self.fgColorLabel.setText(color.name())
             self.fgColorLabel.setStyleSheet(f'background-color: {color.name()}')
-            self.updatePreview(self.bgColorLabel.text(), color.name())
+            self.updatePreview(self.nameEdit.text(), self.bgColorLabel.text(), color.name())
 
-    def updatePreview(self, bgcolor, fgcolor):
-        self.previewLabel.setStyleSheet(f'background-color: {bgcolor}; color: {fgcolor}')
+    def updateName(self, text):
+        self.updatePreview(text, self.bgColorLabel.text(), self.fgColorLabel.text())
+
+    def updatePreview(self, text, bgcolor, fgcolor):
+        # CustomLabel의 색상 및 텍스트 업데이트
+        self.previewLabel.setText(text)
+        self.previewLabel.setColors(bgcolor, fgcolor)
 
     def getName(self):
         return self.nameEdit.text()
@@ -129,13 +186,10 @@ class MeetingApp(QWidget):
 
     def loadData(self):
         # 더미 데이터 생성
-        meetings = [
-            ('모임1', '#FF5733', '#000000'),
-            ('모임2', '#33FF57', '#000000'),
-            ('모임3', '#3357FF', '#FFFFFF')
-        ]
+        self.util = Util()
+        meetings = self.util.모임코드조회()
 
-        for name, bgcolor, fgcolor in meetings:
+        for _, name, bgcolor, fgcolor in meetings[0].values():
             self.addMeetingItem(name, bgcolor, fgcolor)
 
     def addMeetingItem(self, name, bgcolor, fgcolor):

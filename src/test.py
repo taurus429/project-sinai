@@ -6,6 +6,8 @@ from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 import util
 import 날짜유틸, namecard
 from meeting import AttendanceTable
+from graph import GraphWindow  # Import the GraphWindow class
+from roundedRectLabel import RoundedRectLabel
 
 scrollbar_style = """
         QScrollBar:vertical {
@@ -54,70 +56,6 @@ scrollbar_style = """
         }
         """
 
-class RoundedRectLabel(QWidget):
-    def __init__(self, text, util):
-        super().__init__()
-        code2desc, desc2code = util.모임코드조회()
-        self.info = code2desc[text[0]]
-        self.text = self.info[1]
-        self.setMinimumSize(20, 20)  # 최소 크기 설정 (가로, 세로)
-        self.setMouseTracking(True)  # 마우스 움직임 추적 활성화
-        self.tooltip_info = [text[1]]
-
-    def getToolTipText(self):
-        text = f"<b>{self.tooltip_info[0]}</b><br>{self.text}"
-        return text
-
-    def enterEvent(self, event):
-        tooltip_height = self.calculate_tooltip_height()
-        cursor_pos = QCursor.pos()
-        tooltip_pos = cursor_pos + QPoint(0, -tooltip_height)
-        QToolTip.showText(tooltip_pos, self.getToolTipText(), self, self.rect(), 3000)
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        QToolTip.hideText()  # 툴팁 숨기기
-        super().leaveEvent(event)
-
-    def mouseMoveEvent(self, event):
-        tooltip_height = self.calculate_tooltip_height()
-        cursor_pos = QCursor.pos()
-        tooltip_pos = cursor_pos + QPoint(0, -tooltip_height)
-        QToolTip.showText(tooltip_pos, self.getToolTipText(), self, self.rect(), 3000)
-        super().mouseMoveEvent(event)
-
-    def calculate_tooltip_height(self):
-        # QFontMetrics를 사용하여 텍스트의 높이 계산
-        font_metrics = QFontMetrics(QToolTip.font())
-        text_height = font_metrics.height()
-        line_count = f"<b>안내</b><br>{self.text}".count("<br>") + 1
-        total_height = text_height * line_count + 35  # 텍스트 라인 수에 따라 높이 계산 (패딩 포함)
-        return total_height
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 활성화
-
-        rect = event.rect()  # 위젯의 사각형 영역
-        rect.adjust(2, 2, -2, -2)  # 사각형을 약간 안쪽으로 줄임
-        painter.setBrush(QColor(self.info[2]))  # default 색상 설정
-
-        painter.drawRoundedRect(rect, 5, 5)  # 둥근 직사각형 그리기
-
-        font_metrics = QFontMetrics(self.font())  # 현재 폰트 메트릭스
-        text_width = font_metrics.horizontalAdvance(self.text)  # 텍스트의 너비 계산
-        text_height = font_metrics.height()  # 텍스트의 높이 계산
-        text_rect = QRect(rect.left()+2, rect.top()+3, text_width, text_height)  # 텍스트 위치 지정
-
-        painter.setPen(Qt.white)  # 펜 색상 설정
-        painter.drawText(text_rect, Qt.AlignCenter, self.text)  # 텍스트를 중앙 정렬하여 그리기
-
-    def sizeHint(self):
-        font_metrics = QFontMetrics(self.font())  # 현재 폰트 메트릭스
-        text_width = font_metrics.horizontalAdvance(self.text)  # 텍스트의 너비 계산
-        text_height = font_metrics.height()  # 텍스트의 높이 계산
-        return QSize(text_width+10, text_height+10)  # 위젯의 기본 크기 지정
-
 class StudentDetailsWindow(QWidget):
     def __init__(self, 마을원정보, res, util):
         try:
@@ -152,7 +90,7 @@ class StudentDetailsWindow(QWidget):
                 # Horizontal layout to hold labels in a row
                 h_layout = QHBoxLayout()
                 for meeting in meetings:
-                    label = RoundedRectLabel(meeting, util)
+                    label = RoundedRectLabel(meeting)
                     label.setFixedSize(label.sizeHint())
                     h_layout.addWidget(label)
 
@@ -166,7 +104,7 @@ class StudentDetailsWindow(QWidget):
             scroll_widget.setLayout(scroll_layout)
             scroll_area.setWidget(scroll_widget)
             main_layout.addWidget(namecard.BusinessCardWidget(마을원정보["이름"], util.사랑장조회(마을원정보["uid"]), 마을원정보["전화번호"],
-                                   str(마을원정보["생년월일"])))
+                                                              str(마을원정보["생년월일"])))
 
             main_layout.addWidget(scroll_area)
             self.setLayout(main_layout)
@@ -187,7 +125,7 @@ class StudentListWindow(QMainWindow):
         super().__init__()
         self.util = util.Util()
         self.setWindowTitle("마을원 명단")
-        self.setGeometry(100, 100, 400, 500)
+        self.setGeometry(100, 100, 800, 600)  # Increase width and height
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -204,6 +142,9 @@ class StudentListWindow(QMainWindow):
         settings_submenu2 = settings_menu.addAction('설정 서브메뉴 2')
 
         self.layout = QVBoxLayout(self.central_widget)
+
+        self.graph_window = GraphWindow()  # Create an instance of the GraphWindow
+        self.layout.addWidget(self.graph_window)  # Add the graph window to the layout
 
         self.students = self.util.select_all("마을원")
         self.header = ['uid'] + self.students[0][1:]  # Include 'uid' in the header
@@ -247,7 +188,7 @@ class StudentListWindow(QMainWindow):
     def open_add_meeting_window(self):
         self.add_meeting_window = AttendanceTable()
         self.add_meeting_window.show()
-        
+
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()
         if column_name == "이름":
