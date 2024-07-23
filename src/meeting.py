@@ -5,6 +5,7 @@ import util
 from 날짜유틸 import format_datetime
 from addMeeting import AddMeetingWindow
 
+
 class AttendanceTable(QMainWindow):
     def __init__(self):
         super().__init__()

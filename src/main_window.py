@@ -1,0 +1,152 @@
+import sys
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QMenuBar,
+    QToolTip
+)
+from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtCore import Qt
+import util
+import 날짜유틸
+from meeting import AttendanceTable
+from setMeeting import MeetingApp
+from graph import GraphWindow  # Import the GraphWindow class
+from student_table_widget import StudentTableWidget
+from student_details_window import StudentDetailsWindow
+
+
+class StudentListWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.util = util.Util()
+        self.setWindowTitle("마을원 명단")
+        self.setGeometry(100, 100, 800, 600)  # Increase width and height
+
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        self.menu_bar = QMenuBar(self)
+        self.setMenuBar(self.menu_bar)
+
+        file_menu = self.menu_bar.addMenu('파일')
+        file_submenu1 = file_menu.addAction('파일 서브메뉴 1')
+        file_submenu2 = file_menu.addAction('파일 서브메뉴 2')
+
+        settings_menu = self.menu_bar.addMenu('설정')
+        settings_submenu1 = settings_menu.addAction('설정 서브메뉴 1')
+        settings_submenu2 = settings_menu.addAction('설정 서브메뉴 2')
+
+        meeting_menu = self.menu_bar.addMenu('모임')
+        meeting_submenu1 = meeting_menu.addAction('마을 모임 보기')
+        meeting_submenu2 = meeting_menu.addAction('모임 관리')
+
+        self.layout = QVBoxLayout(self.central_widget)
+
+        self.graph_window = GraphWindow()  # Create an instance of the GraphWindow
+        self.layout.addWidget(self.graph_window)  # Add the graph window to the layout
+
+        self.students = self.util.select_all("마을원")
+        self.header = ['uid'] + self.students[0][1:]  # Include 'uid' in the header
+        self.student_table = StudentTableWidget(self.students, self.header, self.util)
+        self.layout.addWidget(self.student_table)
+
+        # 버튼 추가
+        self.button_layout = QHBoxLayout()
+        self.save_button = QPushButton("저장")
+        self.reset_button = QPushButton("초기화")
+        self.save_button.setEnabled(False)
+        self.reset_button.setEnabled(False)
+        self.button_layout.addWidget(self.save_button)
+        self.button_layout.addWidget(self.reset_button)
+        self.layout.addLayout(self.button_layout)
+
+        # 이벤트 연결
+        self.student_table.cellChanged.connect(self.enable_buttons)
+        self.save_button.clicked.connect(self.save_changes)
+        self.reset_button.clicked.connect(self.reset_changes)
+
+        self.student_table.cellClicked.connect(self.handle_cell_click)
+        self.student_table.horizontalHeader().sectionClicked.connect(self.sort_by_column)
+
+        self.details_windows = []  # List to keep track of detail windows
+
+        # Connect file_submenu1 to open AddMeetingWindow
+        meeting_submenu1.triggered.connect(self.open_add_meeting_window)
+        meeting_submenu2.triggered.connect(self.open_set_meeting_window)
+
+    def open_add_meeting_window(self):
+        self.add_meeting_window = AttendanceTable()
+        self.add_meeting_window.show()
+
+    def open_set_meeting_window(self):
+        self.set_meeting_window = MeetingApp()
+        self.set_meeting_window.show()
+
+    def handle_cell_click(self, row, column):
+        column_name = self.student_table.horizontalHeaderItem(column).text()
+        if column_name == "이름":
+            self.show_student_details(row, column)
+
+    def enable_buttons(self):
+        self.save_button.setEnabled(True)
+        self.reset_button.setEnabled(True)
+
+    def reset_changes(self):
+        self.student_table.reset_changes()
+        self.save_button.setEnabled(False)
+        self.reset_button.setEnabled(False)
+
+    def save_changes(self):
+        changed_data = self.student_table.get_changed_data()
+        print("Changed Data:", changed_data)
+        self.save_button.setEnabled(False)
+        self.reset_button.setEnabled(False)
+
+    def sort_by_column(self, column_index):
+        self.student_table.sort_by_column(column_index)
+
+    def show_student_details(self, row, column):
+        마을원_uid = self.student_table.item(row, 0).text()
+        res = self.util.참석조회(마을원_uid)
+        weeks = dict()
+        for r in res[1:]:
+            week = 날짜유틸.get_week_of_month(r[2])
+            if not weeks.__contains__(week):
+                weeks[week] = []
+            if r[0] == 1:
+                date = 날짜유틸.convert_date_format(r[2].split()[0])
+                weeks[week].append((r[1], date))
+        마을원정보 = self.util.마을원정보조회(마을원_uid)
+        details_window = StudentDetailsWindow(마을원정보, weeks, self.util)
+        details_window.show()
+        self.details_windows.append(details_window)
+
+
+def main():
+    app = QApplication(sys.argv)
+
+    # Load stylesheet from file
+    with open('styles.qss', 'r', encoding='utf-8') as f:
+        app.setStyleSheet(f.read())
+
+    font_path = '../asset/font/감탄로드바탕체 Regular.ttf'
+    font_path = '../asset/font/감탄로드돋움체 Regular.ttf'
+    font_id = QFontDatabase.addApplicationFont(font_path)
+    font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+
+    custom_font = QFont(font_family, 10)
+    QToolTip.setFont(custom_font)
+    app.setFont(custom_font)
+
+    window = StudentListWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()

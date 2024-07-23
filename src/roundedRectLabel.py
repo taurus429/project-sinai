@@ -4,11 +4,10 @@ from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from util import Util
 class RoundedRectLabel(QWidget):
     def __init__(self, text):
-        print(text)
         super().__init__()
         self.util = Util()
         code2desc, desc2code = self.util.모임코드조회()
-        self.info = code2desc[text[0]]
+        self.info = code2desc[int(text[0])]
         self.text = self.info[1]
         self.setMinimumSize(20, 20)  # 최소 크기 설정 (가로, 세로)
         self.setMouseTracking(True)  # 마우스 움직임 추적 활성화
