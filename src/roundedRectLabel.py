@@ -3,15 +3,16 @@ from PyQt5.QtGui import QPainter, QColor, QFontMetrics, QCursor
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from util import Util
 class RoundedRectLabel(QWidget):
-    def __init__(self, text):
+    def __init__(self, code, date):
         super().__init__()
         self.util = Util()
         code2desc, desc2code = self.util.모임코드조회()
-        self.info = code2desc[int(text[0])]
+        self.info = code2desc[int(code)]
+        print(self.info)
         self.text = self.info[1]
         self.setMinimumSize(20, 20)  # 최소 크기 설정 (가로, 세로)
         self.setMouseTracking(True)  # 마우스 움직임 추적 활성화
-        self.tooltip_info = [text[1]]
+        self.tooltip_info = [date]
 
     def getToolTipText(self):
         text = f"<b>{self.tooltip_info[0]}</b><br>{self.text}"

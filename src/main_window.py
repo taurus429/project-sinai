@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QPushButton,
     QMenuBar,
+    QSplitter,
     QToolTip
 )
 from PyQt5.QtGui import QFontDatabase, QFont
@@ -16,8 +17,8 @@ import 날짜유틸
 from meeting import AttendanceTable
 from setMeeting import MeetingApp
 from graph import GraphWindow  # Import the GraphWindow class
-from student_table_widget import StudentTableWidget
-from student_details_window import StudentDetailsWindow
+from member_table_widget import StudentTableWidget
+from member_details_window import StudentDetailsWindow
 
 
 class StudentListWindow(QMainWindow):
@@ -25,7 +26,7 @@ class StudentListWindow(QMainWindow):
         super().__init__()
         self.util = util.Util()
         self.setWindowTitle("마을원 명단")
-        self.setGeometry(100, 100, 700, 1000)  # Increase width and height
+        self.setGeometry(100, 100, 1200, 800)  # Increase width and height
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -45,17 +46,28 @@ class StudentListWindow(QMainWindow):
         meeting_submenu1 = meeting_menu.addAction('마을 모임 보기')
         meeting_submenu2 = meeting_menu.addAction('모임 관리')
 
-        self.layout = QVBoxLayout(self.central_widget)
+        # Create a QSplitter to divide the window horizontally
+        splitter = QSplitter(Qt.Horizontal)
 
-        self.graph_window = GraphWindow()  # Create an instance of the GraphWindow
-        self.layout.addWidget(self.graph_window)  # Add the graph window to the layout
+        # Create widgets for the left and right sides of the splitter
+        left_widget = QWidget()
+        right_widget = QWidget()
 
+        # Set up layouts for the left and right widgets
+        left_layout = QVBoxLayout()
+        right_layout = QVBoxLayout()
+
+        # Initialize GraphWindow and add it to the left layout
+        self.graph_window = GraphWindow()
+        left_layout.addWidget(self.graph_window)
+
+        # Set up the right layout with the student table and buttons
         self.students = self.util.select_all("마을원")
-        self.header = ['uid'] + self.students[0][1:]  # Include 'uid' in the header
+        self.header = ['uid'] + self.students[0][1:]
         self.student_table = StudentTableWidget(self.students, self.header, self.util)
-        self.layout.addWidget(self.student_table)
+        right_layout.addWidget(self.student_table)
 
-        # 버튼 추가
+        # Add buttons to the right layout
         self.button_layout = QHBoxLayout()
         self.save_button = QPushButton("저장")
         self.reset_button = QPushButton("초기화")
@@ -63,19 +75,32 @@ class StudentListWindow(QMainWindow):
         self.reset_button.setEnabled(False)
         self.button_layout.addWidget(self.save_button)
         self.button_layout.addWidget(self.reset_button)
-        self.layout.addLayout(self.button_layout)
+        right_layout.addLayout(self.button_layout)
 
-        # 이벤트 연결
+        # Set layouts for the left and right widgets
+        left_widget.setLayout(left_layout)
+        right_widget.setLayout(right_layout)
+
+        # Add widgets to the splitter
+        splitter.addWidget(left_widget)
+        splitter.addWidget(right_widget)
+
+        # Add the splitter to the main layout
+        main_layout = QVBoxLayout(self.central_widget)
+        main_layout.addWidget(splitter)
+
+        # Set initial sizes of the splitter sections
+        splitter.setSizes([400, 800])
+
+        # Connect signals and slots
         self.student_table.cellChanged.connect(self.enable_buttons)
         self.save_button.clicked.connect(self.save_changes)
         self.reset_button.clicked.connect(self.reset_changes)
-
         self.student_table.cellClicked.connect(self.handle_cell_click)
         self.student_table.horizontalHeader().sectionClicked.connect(self.sort_by_column)
+        self.details_windows = []
 
-        self.details_windows = []  # List to keep track of detail windows
-
-        # Connect file_submenu1 to open AddMeetingWindow
+        # Connect file_submenu1 and file_submenu2 to actions
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
 

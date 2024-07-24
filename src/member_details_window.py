@@ -1,12 +1,11 @@
-# student_details_window.py
 import sys
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QApplication
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QApplication, QScrollArea
 from PyQt5.QtCore import Qt
 import namecard
 from src import util, 날짜유틸
 from statistics_table_widget import StatisticsTableWidget  # 통계 테이블 위젯 가져오기
 from week_info_widget import WeekInfoWidget  # 주간 정보 위젯 가져오기
-
+from detailed_info_table_widget import DetailedInfoTableWidget  # DetailedInfoTableWidget 가져오기
 
 class StudentDetailsWindow(QWidget):
     def __init__(self, 마을원정보, weeks, util):
@@ -30,9 +29,28 @@ class StudentDetailsWindow(QWidget):
             # QSplitter 사용하여 가로 레이아웃을 나누기
             splitter = QSplitter(Qt.Horizontal)  # 수평 방향으로 레이아웃을 나눕니다.
 
-            # 통계 테이블을 왼쪽에 추가
+            # 좌측 영역에 통계 테이블과 세부 정보 테이블을 세로로 배치
+            left_widget = QWidget()
+            left_layout = QVBoxLayout()
+            left_layout.setContentsMargins(0, 0, 0, 0)
+            left_layout.setSpacing(0)
+
+            # 통계 테이블 위젯 추가
             stats_table = StatisticsTableWidget(마을원정보["uid"], util)  # 통계 테이블 위젯 사용
-            splitter.addWidget(stats_table)
+            left_layout.addWidget(stats_table)
+
+            # 세부정보 테이블 추가
+            detailed_info_table = DetailedInfoTableWidget()
+            left_layout.addWidget(detailed_info_table)
+
+            left_widget.setLayout(left_layout)
+
+            # 좌측 영역을 스크롤 가능한 영역으로 설정
+            scroll_area = QScrollArea()
+            scroll_area.setWidgetResizable(True)
+            scroll_area.setWidget(left_widget)
+
+            splitter.addWidget(scroll_area)
 
             # 주간 정보를 표시하는 스크롤 영역을 오른쪽에 추가
             week_info_widget = WeekInfoWidget(weeks)  # 주간 정보 위젯 사용
@@ -42,7 +60,7 @@ class StudentDetailsWindow(QWidget):
             main_layout.addWidget(splitter)
 
             # 초기 크기 비율 설정 (1:2 비율로 통계 테이블과 스크롤 영역 크기 설정)
-            splitter.setSizes([600, 600])
+            splitter.setSizes([400, 600])
 
             self.setLayout(main_layout)
         except Exception as e:
@@ -67,4 +85,3 @@ if __name__ == "__main__":
     details_window.show()
 
     sys.exit(app.exec_())
-

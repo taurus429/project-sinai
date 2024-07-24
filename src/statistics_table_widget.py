@@ -1,4 +1,3 @@
-# statistics_table_widget.py
 import sys
 import util
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QApplication
@@ -16,7 +15,7 @@ class StatisticsTableWidget(QTableWidget):
         stats = []
         for s in self.statis:
             if len(s) == 2:
-                stats.append((code[s[0][0]][1], f"{s[0][1]}회", f"{s[0][2]}위", f"{s[1][0]}%", f"{s[1][1]}위"))
+                stats.append((code[s[0][0]][1], f"{s[0][1]}회", f"{s[0][2]}위", f"{round(s[1][0])}%", f"{s[1][1]}위"))
 
         # 테이블 초기 설정
         self.setColumnCount(5)  # 통계를 위한 5개의 열 설정
@@ -32,6 +31,9 @@ class StatisticsTableWidget(QTableWidget):
 
         # 왼쪽의 index 숨기기
         self.verticalHeader().setVisible(False)  # 인덱스가 보이지 않도록 설정
+
+        # Set header background color
+        self.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: #f0f0f0; }")
 
         self.populate_stats_table(stats)  # 통계 테이블 채우기
 

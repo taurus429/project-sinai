@@ -33,7 +33,7 @@ class WeekInfoWidget(QScrollArea):
             # 회의 정보를 가로로 나열하기 위한 레이아웃
             h_layout = QHBoxLayout()
             for meeting in meetings:
-                label = RoundedRectLabel(f"{meeting[0]} ({meeting[1]})")
+                label = RoundedRectLabel(meeting[0], meeting[1])
                 label.setFixedSize(label.sizeHint())
                 h_layout.addWidget(label)
 
