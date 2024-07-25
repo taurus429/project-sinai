@@ -78,8 +78,8 @@ class Util:
         ]
         # 초기 데이터
         init_data = [
-            [('자체예배', '#ff595e', '#ffffff'), ('더원', '#ff595e', '#ffffff'), ('사랑모임', '#f79824', '#ffffff'), ('금철', '#1982c4', '#ffffff'), ('대예배', '#6a4c93', '#ffffff'), ('주와나', '#ffb5a7', '#ffffff'), ('벧엘의밤', '#000000', '#ffffff'),
-             ('아웃팅', '#00a896', '#ffffff'), ('리트릿', '#e9589e', '#ffffff'), ('큐티모임', '#27187e', '#ffffff'), ('선교모임', '#656d4a', '#ffffff'), ('아웃리치', '#000000', '#ffffff'), ('또래모임', '#000000', '#ffffff'), ('수련회', '#000000', '#ffffff')]
+            [('자체예배', '#ff595e', '#ffffff'), ('더원', '#ff595e', '#ffffff'), ('사랑모임', '#f79824', '#ffffff'), ('소울기도회', '#008148', '#ffffff'), ('금철', '#1982c4', '#ffffff'), ('대예배', '#6a4c93', '#ffffff'), ('주와나', '#ffb5a7', '#ffffff'), ('벧엘의밤', '#000000', '#ffffff'),
+             ('아웃팅', '#00a896', '#ffffff'), ('리트릿', '#e9589e', '#ffffff'), ('큐티모임', '#27187e', '#ffffff'), ('선교모임', '#656d4a', '#ffffff'), ('아웃리치', '#000000', '#ffffff'), ('또래모임', '#b37dff', '#ffffff'), ('수련회', '#3e71ff', '#ffffff')]
             , [('23년 3텀', '2023-10-15', '2023-12-31'),
                ('24년 1텀', '2024-01-07', '2024-03-31'),
                ('24년 2텀', '2024-04-07', '2024-12-31')]
@@ -324,7 +324,7 @@ class Util:
                             self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?",
                                                 (attendance, 마을원_uid, 모임_uid))
                             # print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
-                        else:  # 인서트
+                        elif not pd.isna(attendance):  # 인서트
                             self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
                                                 (마을원_uid, 모임_uid, attendance))
                         attendance_list.append(attendance_tuple)

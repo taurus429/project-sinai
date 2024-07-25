@@ -1,8 +1,10 @@
+import os
 import sys
-
+from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QApplication
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont, QFontMetrics
 from PyQt5.QtCore import QRectF, Qt
+import font_util, util, medal, trophy
 
 class TitleWidget(QWidget):
     def __init__(self, title):
@@ -49,9 +51,15 @@ class TitleWidget(QWidget):
             text = f'{self.title[1]} {self.title[0]}사랑'
         painter.drawText(rect, Qt.AlignCenter, text)
 
+
 class BusinessCardWidget(QWidget):
-    def __init__(self, name, titles, phone, email):
+    def __init__(self, 마을원정보):
         super().__init__()
+        self.util = util.Util()
+        name = 마을원정보["이름"]
+        titles = self.util.사랑장조회(마을원정보["uid"])
+        phone = 마을원정보["전화번호"]
+        birthdate = str(마을원정보["생년월일"])
 
         # Set up the main layout
         main_layout = QVBoxLayout()
@@ -59,9 +67,12 @@ class BusinessCardWidget(QWidget):
         # Horizontal layout for name and titles
         name_title_layout = QHBoxLayout()
 
+        font_path = "../asset/font/감탄로드바탕체 Bold.ttf"  # Replace with your font file path
+        custom_font_family = font_util.load_custom_font(font_path)
+
         # Name label
-        name_label = QLabel(name)
-        name_label.setFont(QFont('Arial', 16, QFont.Bold))
+        name_label = QLabel(f"{name} ({birthdate[:2]}또래)")
+        name_label.setFont(QFont(custom_font_family, 16))
         name_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         name_title_layout.addWidget(name_label)
 
@@ -110,18 +121,79 @@ class BusinessCardWidget(QWidget):
         # Add the name and titles layout to the main layout
         main_layout.addLayout(name_title_layout)
 
-        # Phone label
+        # Create a new horizontal layout for phone and birthdate
+        down_layout = QHBoxLayout()
+
+        # Left layout for phone
+        phone_layout = QVBoxLayout()
         phone_label = QLabel(phone)
         phone_label.setAlignment(Qt.AlignLeft)
-        main_layout.addWidget(phone_label)
+        phone_layout.addWidget(phone_label)
+        birthdate_label = QLabel(birthdate)
+        birthdate_label.setAlignment(Qt.AlignLeft)
+        phone_layout.addWidget(birthdate_label)
 
-        # Email label
-        email_label = QLabel(email)
-        email_label.setAlignment(Qt.AlignLeft)
-        main_layout.addWidget(email_label)
+        c, _ = self.util.모임코드조회()
+        # Right layout for medal
+        medal_layout = QHBoxLayout()
+        medal_layout.setAlignment(Qt.AlignRight)
+        statis = self.util.참석통계(마을원정보["uid"])[1:]
+        for s in statis:
+            if len(s) >= 2:
+                code = c[s[0][0]]
+                if s[0][2] == 1 and s[1][1] == 1:
+                    if not os.path.exists(f'../asset/img/trophy{code[2][1:]}{code[3][1:]}.png'):
+                        trophy.Trophy(code[2], code[3]).create_img()
+                    image_label = QLabel(self)
+                    image_label.setAlignment(Qt.AlignRight)
+
+                    # QPixmap 로드 및 크기 조정
+                    pixmap = QPixmap(f'../asset/img/trophy{code[2][1:]}{code[3][1:]}.png')
+                    pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+                    image_label.setPixmap(pixmap)
+                    # self.image_label.setToolTip("trophy.png")  # 툴팁 설정
+                    medal_layout.addWidget(image_label)
+                else:
+                    if s[0][2] <= 3:
+                        if not os.path.exists(f'../asset/img/medal{s[0][2]}{code[2][1:]}{code[3][1:]}.png'):
+                            medal.Medal(s[0][2], code[2], code[3]).create_img()
+                        image_label = QLabel(self)
+                        image_label.setAlignment(Qt.AlignRight)
+
+                        # QPixmap 로드 및 크기 조정
+                        pixmap = QPixmap(f'../asset/img/medal{s[0][2]}{code[2][1:]}{code[3][1:]}.png')
+                        pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+                        image_label.setPixmap(pixmap)
+                        # self.image_label.setToolTip("trophy.png")  # 툴팁 설정
+                        medal_layout.addWidget(image_label)
+                    if s[1][1] <= 3:
+                        if not os.path.exists(f'../asset/img/medal{s[1][1]}{code[2][1:]}{code[3][1:]}.png'):
+                            medal.Medal(s[1][1], code[2], code[3]).create_img()
+                        image_label = QLabel(self)
+                        image_label.setAlignment(Qt.AlignRight)
+
+                        # QPixmap 로드 및 크기 조정
+                        pixmap = QPixmap(f'../asset/img/medal{s[1][1]}{code[2][1:]}{code[3][1:]}.png')
+                        pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+                        image_label.setPixmap(pixmap)
+                        # self.image_label.setToolTip("trophy.png")  # 툴팁 설정
+                        medal_layout.addWidget(image_label)
+
+
+
+        # Add phone and birthdate layouts to the main phone_birthdate_layout
+        down_layout.addLayout(phone_layout)
+        down_layout.addLayout(medal_layout)
+
+        # Add the phone and birthdate layout to the main layout
+        main_layout.addLayout(down_layout)
 
         # Set the layout for the widget
         self.setLayout(main_layout)
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -131,10 +203,8 @@ class MainWindow(QWidget):
         main_layout = QVBoxLayout()
 
         # Create business card widgets
-        card1 = BusinessCardWidget("John Doe", ["Software Engineer", "Team Lead"], "+1-234-567-890",
-                                   "john.doe@example.com")
-        card2 = BusinessCardWidget("Jane Smith", ["Product Manager", "Scrum Master", "UX Designer", "HR", "Receiption"], "+1-987-654-321",
-                                   "jane.smith@example.com")
+        card1 = BusinessCardWidget({'uid': 4, '이름': '박찬호', '생년월일': 960429, '성별': '남', '전화번호': '010-7378-7996'})
+        card2 = BusinessCardWidget({'uid': 4, '이름': '박찬호', '생년월일': 960429, '성별': '남', '전화번호': '010-7378-7996'})
 
         # Add the business cards to the main layout
         main_layout.addWidget(card1)

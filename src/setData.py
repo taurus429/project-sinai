@@ -2,7 +2,7 @@ import util
 import os
 u = util.Util()
 u.init()
-u.마을원저장("C:/Users/85350/Desktop/마을원명단.xlsx")
+u.마을원저장("../data/마을원명단.xlsx")
 dirname = "../data/사랑보고서"
 filenames = os.listdir(dirname)
 file_list = []

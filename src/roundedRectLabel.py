@@ -8,7 +8,6 @@ class RoundedRectLabel(QWidget):
         self.util = Util()
         code2desc, desc2code = self.util.모임코드조회()
         self.info = code2desc[int(code)]
-        print(self.info)
         self.text = self.info[1]
         self.setMinimumSize(20, 20)  # 최소 크기 설정 (가로, 세로)
         self.setMouseTracking(True)  # 마우스 움직임 추적 활성화

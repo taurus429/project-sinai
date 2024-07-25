@@ -26,7 +26,7 @@ class StudentListWindow(QMainWindow):
         super().__init__()
         self.util = util.Util()
         self.setWindowTitle("마을원 명단")
-        self.setGeometry(100, 100, 1200, 800)  # Increase width and height
+        self.setGeometry(100, 100, 1200, 700)  # Increase width and height
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -90,7 +90,7 @@ class StudentListWindow(QMainWindow):
         main_layout.addWidget(splitter)
 
         # Set initial sizes of the splitter sections
-        splitter.setSizes([400, 800])
+        splitter.setSizes([600, 800])
 
         # Connect signals and slots
         self.student_table.cellChanged.connect(self.enable_buttons)

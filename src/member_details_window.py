@@ -1,11 +1,13 @@
 import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QApplication, QScrollArea
 from PyQt5.QtCore import Qt
-import namecard
+from PyQt5.QtGui import QFontDatabase, QFont
+import namecard, font_util
 from src import util, 날짜유틸
 from statistics_table_widget import StatisticsTableWidget  # 통계 테이블 위젯 가져오기
 from week_info_widget import WeekInfoWidget  # 주간 정보 위젯 가져오기
 from detailed_info_table_widget import DetailedInfoTableWidget  # DetailedInfoTableWidget 가져오기
+
 
 class StudentDetailsWindow(QWidget):
     def __init__(self, 마을원정보, weeks, util):
@@ -20,12 +22,8 @@ class StudentDetailsWindow(QWidget):
 
             # 명함 위젯 추가
             main_layout.addWidget(namecard.BusinessCardWidget(
-                마을원정보["이름"],
-                util.사랑장조회(마을원정보["uid"]),
-                마을원정보["전화번호"],
-                str(마을원정보["생년월일"])
+                마을원정보
             ))
-
             # QSplitter 사용하여 가로 레이아웃을 나누기
             splitter = QSplitter(Qt.Horizontal)  # 수평 방향으로 레이아웃을 나눕니다.
 
@@ -70,6 +68,15 @@ class StudentDetailsWindow(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # Load custom font
+    font_path = "../asset/font/감탄로드바탕체 Regular.ttf"  # Replace with your font file path
+    custom_font_family = font_util.load_custom_font(font_path)
+
+    if custom_font_family:
+        font_size = 10  # Set the desired font size
+        app.setFont(QFont(custom_font_family, font_size))
+
     util = util.Util()
     res = util.참석조회(4)  # 학생 ID 4의 참석 정보를 조회합니다.
     weeks = dict()
