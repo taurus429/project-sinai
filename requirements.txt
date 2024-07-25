@@ -1,2 +1,5 @@
 pandas
 PyQt5
+openpyxl
+sqlite3
+matplotlib
