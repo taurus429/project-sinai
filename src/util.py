@@ -2,8 +2,8 @@ import datetime
 import sqlite3
 import pandas as pd
 import os
-
-
+import 날짜유틸
+from datetime import datetime, timedelta
 class Util:
     def __init__(self):
         self.conn = sqlite3.connect('db.sqlite3')
@@ -26,9 +26,14 @@ class Util:
             CREATE TABLE 마을원 (
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
                 이름 VARCHAR(100) NOT NULL,
+                구분 VARCHAR(2) NOT NULL DEFAULT 'A', 
                 생년월일 DATE NOT NULL,
                 성별 VARCHAR(7) NOT NULL,
-                전화번호 VARCHAR(15)
+                전화번호 VARCHAR(15),
+                사랑장 VARCHAR(15), 
+                장결여부 BOOLEAN NOT NULL DEFAULT FALSE,
+                졸업여부 BOOLEAN NOT NULL DEFAULT FALSE,
+                리더여부 BOOLEAN NOT NULL DEFAULT FALSE
             );
             """,
             """
@@ -72,7 +77,8 @@ class Util:
                 코드 INTEGER PRIMARY KEY AUTOINCREMENT,
                 설명 VARCHAR(50) NOT NULL,
                 배경색깔 VARCHAR(10) NOT NULL,
-                글자색깔 VARCHAR(10) NOT NULL
+                글자색깔 VARCHAR(10) NOT NULL,
+                모임횟수 INTEGER
             )
             """
         ]
@@ -474,10 +480,26 @@ class Util:
 
     def 모임코드조회(self):
         try:
+            # Update the meeting count
+            self.cursor.execute('''
+                UPDATE 모임_코드
+                SET 모임횟수 = (
+                    SELECT COUNT(*)
+                    FROM 모임
+                    WHERE 모임.모임_코드 = 모임_코드.코드
+                )
+            ''')
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+            # Fetch all records
             self.cursor.execute("SELECT * FROM 모임_코드")
         except Exception as e:
             print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
             return None
+
         res = self.cursor.fetchall()
 
         code2desc = dict()
@@ -590,6 +612,98 @@ class Util:
 
         return result_with_header
 
+    def 장결등록(self, 마을원_uid):
+        try:
+            # Update the meeting count
+            self.cursor.execute('''
+                UPDATE 마을원
+                SET 장결여부 = 1 
+                WHERE uid = ?
+            ''', (마을원_uid,))
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
+    def 졸업등록(self, 마을원_uid):
+        try:
+            # Update the meeting count
+            self.cursor.execute('''
+                UPDATE 마을원
+                SET 졸업여부 = 1 
+                WHERE uid = ?
+            ''', (마을원_uid,))
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
+    def 업데이트_사랑장_리더여부(self):
+        try:
+            # Update the meeting count
+            self.cursor.execute("""
+    -- 먼저 사랑장 정보를 가져오기 위한 서브쿼리
+WITH MostRecentLeader AS (
+    SELECT
+        소속.사랑원_uid,
+        MAX(소속.날짜) AS 최근_날짜
+    FROM 사랑_소속 소속
+    GROUP BY 소속.사랑원_uid
+),
+
+-- 가장 최근의 사랑장_uid를 가져오기 위한 서브쿼리
+RecentLeaders AS (
+    SELECT
+        소속.사랑원_uid,
+        소속.사랑장_uid
+    FROM 사랑_소속 소속
+    JOIN MostRecentLeader mr ON 소속.사랑원_uid = mr.사랑원_uid AND 소속.날짜 = mr.최근_날짜
+),
+
+-- 사랑장 이름을 가져오기 위한 서브쿼리
+LeaderNames AS (
+    SELECT
+        r.사랑원_uid,
+        mw.이름 AS 사랑장_이름
+    FROM RecentLeaders r
+    JOIN 마을원 mw ON r.사랑장_uid = mw.uid
+)
+
+-- 최종 업데이트 쿼리
+UPDATE 마을원
+SET
+    사랑장 = COALESCE(ln.사랑장_이름, 마을원.사랑장),  -- 사랑장 이름 업데이트
+    리더여부 = CASE
+        WHEN 마을원.이름 = ln.사랑장_이름 THEN TRUE
+        ELSE FALSE
+    END
+FROM LeaderNames ln
+WHERE 마을원.uid = ln.사랑원_uid;
+
+    """)
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
     def truncate(self, table):
         # 마을원 테이블 조회
         self.cursor.execute(f"DELETE FROM {table};")
@@ -616,3 +730,44 @@ u = Util()
 # u.select_all("참석")
 # u.select_all("모임")
 
+filtered_list = [tup for tup in u.참석조회(21)[1:] if tup[0] == 1 and tup[1] in (1, 2)]
+
+# 튜플 리스트의 날짜들을 추출하여 datetime 객체로 변환
+dates = [datetime.strptime(tup[2], '%Y-%m-%d %H:%M:%S') for tup in filtered_list]
+
+# 날짜들을 내림차순으로 정렬 (이미 정렬된 것으로 가정)
+dates.sort(reverse=True)
+
+# 가장 최근 날짜로부터 7일 간격으로 연속된 데이터 개수 계산
+continuous_count = 1  # 첫 번째 날짜는 이미 포함
+
+# 7일 간격 확인
+for i in range(1, len(dates)):
+    if (dates[i - 1] - dates[i]).days == 7:
+        continuous_count += 1
+    else:
+        break  # 7일 간격이 아닌 경우 중단
+
+# 결과 출력
+print("연속된 데이터의 개수:", continuous_count)
+
+filtered_list = [tup for tup in u.참석조회(4)[1:] if tup[0] == 1 and tup[1] == 3]
+
+# 튜플 리스트의 날짜들을 추출하여 datetime 객체로 변환
+dates = [datetime.strptime(tup[2], '%Y-%m-%d %H:%M:%S') for tup in filtered_list]
+
+# 날짜들을 내림차순으로 정렬 (이미 정렬된 것으로 가정)
+dates.sort(reverse=True)
+
+# 가장 최근 날짜로부터 7일 간격으로 연속된 데이터 개수 계산
+continuous_count = 1  # 첫 번째 날짜는 이미 포함
+
+# 7일 간격 확인
+for i in range(1, len(dates)):
+    if (dates[i - 1] - dates[i]).days == 7:
+        continuous_count += 1
+    else:
+        break  # 7일 간격이 아닌 경우 중단
+
+# 결과 출력
+print("연속된 데이터의 개수:", continuous_count)

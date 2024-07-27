@@ -20,10 +20,10 @@ class StudentDetailsWindow(QWidget):
             main_layout.setContentsMargins(0, 0, 0, 0)  # 여백을 제거합니다.
             main_layout.setSpacing(0)  # 위젯 간의 간격을 제거합니다.
 
+            namecard_widget = namecard.BusinessCardWidget(마을원정보)
+            namecard_widget.setFixedHeight(100)
             # 명함 위젯 추가
-            main_layout.addWidget(namecard.BusinessCardWidget(
-                마을원정보
-            ))
+            main_layout.addWidget(namecard_widget)
             # QSplitter 사용하여 가로 레이아웃을 나누기
             splitter = QSplitter(Qt.Horizontal)  # 수평 방향으로 레이아웃을 나눕니다.
 

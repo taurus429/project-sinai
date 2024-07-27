@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QFontDatabase
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QApplication
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont, QFontMetrics
 from PyQt5.QtCore import QRectF, Qt
@@ -8,13 +8,18 @@ import font_util, util, medal, trophy
 
 class TitleWidget(QWidget):
     def __init__(self, title):
+        # 커스텀 폰트 등록
         super().__init__()
+        font_path = "../asset/font/감탄로드바탕체 Regular.ttf"  # 커스텀 폰트 파일 경로
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        self.font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
         self.title = title
         self.setFixedHeight(20)  # 직사각형의 높이 설정
         self.set_width_to_title()
 
     def set_width_to_title(self):
-        font = QFont('Arial', 10)
+
+        font = QFont(self.font_family, 10)
         metrics = QFontMetrics(font)
         if self.title[2] == 1:
             text = f'{self.title[1]} 사랑장'
@@ -44,13 +49,12 @@ class TitleWidget(QWidget):
 
         # Draw title text
         painter.setPen(QColor(0, 0, 0))  # 텍스트 색상 설정
-        painter.setFont(QFont('Arial', 10))
+        painter.setFont(QFont(self.font_family, 10))
         if self.title[2] == 1:
             text = f'{self.title[1]} 사랑장'
         else:
             text = f'{self.title[1]} {self.title[0]}사랑'
         painter.drawText(rect, Qt.AlignCenter, text)
-
 
 class BusinessCardWidget(QWidget):
     def __init__(self, 마을원정보):
@@ -133,56 +137,42 @@ class BusinessCardWidget(QWidget):
         birthdate_label.setAlignment(Qt.AlignLeft)
         phone_layout.addWidget(birthdate_label)
 
+        # 메달/트로피 설정을 위한 메인 로직
         c, _ = self.util.모임코드조회()
-        # Right layout for medal
         medal_layout = QHBoxLayout()
         medal_layout.setAlignment(Qt.AlignRight)
         statis = self.util.참석통계(마을원정보["uid"])[1:]
+
         for s in statis:
             if len(s) >= 2:
                 code = c[s[0][0]]
+                if code[4] < 5:
+                    continue
+                # 이미지 타입 결정
                 if s[0][2] == 1 and s[1][1] == 1:
-                    if not os.path.exists(f'../asset/img/trophy{code[2][1:]}{code[3][1:]}.png'):
-                        trophy.Trophy(code[2], code[3]).create_img()
-                    image_label = QLabel(self)
-                    image_label.setAlignment(Qt.AlignRight)
-
-                    # QPixmap 로드 및 크기 조정
-                    pixmap = QPixmap(f'../asset/img/trophy{code[2][1:]}{code[3][1:]}.png')
-                    pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-                    image_label.setPixmap(pixmap)
-                    # self.image_label.setToolTip("trophy.png")  # 툴팁 설정
-                    medal_layout.addWidget(image_label)
+                    image_type = 'trophy'
+                    ranks = [(1, '참석수/참석률')]  # 트로피는 순위가 필요 없음
                 else:
-                    if s[0][2] <= 3:
-                        if not os.path.exists(f'../asset/img/medal{s[0][2]}{code[2][1:]}{code[3][1:]}.png'):
-                            medal.Medal(s[0][2], code[2], code[3]).create_img()
-                        image_label = QLabel(self)
-                        image_label.setAlignment(Qt.AlignRight)
+                    image_type = 'medal'
+                    # 두 랭크 중 더 높은 랭크를 선택 (숫자가 낮을수록 랭크가 높다)
+                    rank1 = (s[0][2], '참석수')
+                    rank2 = (s[1][1], '참석률')
 
-                        # QPixmap 로드 및 크기 조정
-                        pixmap = QPixmap(f'../asset/img/medal{s[0][2]}{code[2][1:]}{code[3][1:]}.png')
-                        pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+                    # 두 랭크가 모두 3위 이내에 있는지 확인하고 더 높은 랭크 선택
+                    if rank1[0] <= 3 and rank2[0] <= 3:
+                        rank_to_use = min(rank1, rank2, key=lambda x: x[0])
+                        ranks = [rank_to_use]
+                    elif rank1[0] <= 3:
+                        ranks = [rank1]
+                    elif rank2[0] <= 3:
+                        ranks = [rank2]
+                    else:
+                        ranks = []  # 둘 다 3위 이내가 아니면 추가 안 함
 
-                        image_label.setPixmap(pixmap)
-                        # self.image_label.setToolTip("trophy.png")  # 툴팁 설정
-                        medal_layout.addWidget(image_label)
-                    if s[1][1] <= 3:
-                        if not os.path.exists(f'../asset/img/medal{s[1][1]}{code[2][1:]}{code[3][1:]}.png'):
-                            medal.Medal(s[1][1], code[2], code[3]).create_img()
-                        image_label = QLabel(self)
-                        image_label.setAlignment(Qt.AlignRight)
-
-                        # QPixmap 로드 및 크기 조정
-                        pixmap = QPixmap(f'../asset/img/medal{s[1][1]}{code[2][1:]}{code[3][1:]}.png')
-                        pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-                        image_label.setPixmap(pixmap)
-                        # self.image_label.setToolTip("trophy.png")  # 툴팁 설정
-                        medal_layout.addWidget(image_label)
-
-
+                # 조건에 따라 이미지 추가
+                for rank in ranks:
+                    image_path = self.create_image_if_not_exists(image_type, rank[0], code[2], code[3])
+                    self.add_image_to_layout(medal_layout, image_path, f"{code[1]} {rank[1]} #{rank[0]}")
 
         # Add phone and birthdate layouts to the main phone_birthdate_layout
         down_layout.addLayout(phone_layout)
@@ -193,6 +183,50 @@ class BusinessCardWidget(QWidget):
 
         # Set the layout for the widget
         self.setLayout(main_layout)
+
+    def add_image_to_layout(self, layout, image_path, tooltip_text):
+        """
+        QPixmap을 사용하여 QLabel을 생성하고 레이아웃에 추가하며 툴팁을 설정하는 헬퍼 함수.
+
+        Args:
+            layout (QHBoxLayout): QLabel을 추가할 레이아웃.
+            image_path (str): QPixmap에 로드할 이미지의 경로.
+            tooltip_text (str): 이미지 위에 마우스를 올렸을 때 표시할 툴팁 텍스트.
+        """
+        image_label = QLabel(self)
+        image_label.setAlignment(Qt.AlignRight)
+
+        # QPixmap을 로드하고 크기 조정
+        pixmap = QPixmap(image_path)
+        pixmap = pixmap.scaled(30, 30, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+
+        image_label.setPixmap(pixmap)
+        image_label.setToolTip(tooltip_text)  # 툴팁 설정
+        layout.addWidget(image_label)
+
+    def create_image_if_not_exists(self, image_type, rank, code2, code3):
+        """
+        이미지가 존재하지 않을 경우 이미지를 생성하는 헬퍼 함수.
+
+        Args:
+            image_type (str): 이미지의 종류 ('trophy' 또는 'medal').
+            rank (int): 메달의 순위 번호.
+            code2 (str): 코드의 두 번째 부분.
+            code3 (str): 코드의 세 번째 부분.
+
+        Returns:
+            str: 이미지 파일의 경로.
+        """
+        if image_type == 'trophy':
+            image_path = f'../asset/img/trophy{code2[1:]}{code3[1:]}.png'
+            if not os.path.exists(image_path):
+                trophy.Trophy(code2, code3).create_img()
+        else:
+            image_path = f'../asset/img/medal{rank}{code2[1:]}{code3[1:]}.png'
+            if not os.path.exists(image_path):
+                medal.Medal(rank, code2, code3).create_img()
+
+        return image_path
 
 
 class MainWindow(QWidget):

@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QToolTip
 )
-from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
 import util
 import 날짜유틸
@@ -103,6 +103,7 @@ class StudentListWindow(QMainWindow):
         # Connect file_submenu1 and file_submenu2 to actions
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
+        self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
     def open_add_meeting_window(self):
         self.add_meeting_window = AttendanceTable()
@@ -158,7 +159,7 @@ def main():
     # Load stylesheet from file
     with open('styles.qss', 'r', encoding='utf-8') as f:
         app.setStyleSheet(f.read())
-
+    app.setWindowIcon(QIcon('../asset/icon/icon.ico'))
     font_path = '../asset/font/감탄로드바탕체 Regular.ttf'
     font_path = '../asset/font/감탄로드돋움체 Regular.ttf'
     font_id = QFontDatabase.addApplicationFont(font_path)
