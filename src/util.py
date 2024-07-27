@@ -25,6 +25,7 @@ class Util:
             """
             CREATE TABLE 마을원 (
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
+                또래 VARCHAR(3) NOT NULL,
                 이름 VARCHAR(100) NOT NULL,
                 구분 VARCHAR(2) NOT NULL DEFAULT 'A', 
                 생년월일 DATE NOT NULL,
@@ -33,7 +34,9 @@ class Util:
                 사랑장 VARCHAR(15), 
                 장결여부 BOOLEAN NOT NULL DEFAULT FALSE,
                 졸업여부 BOOLEAN NOT NULL DEFAULT FALSE,
-                리더여부 BOOLEAN NOT NULL DEFAULT FALSE
+                리더여부 BOOLEAN NOT NULL DEFAULT FALSE,
+                빠른여부 BOOLEAN NOT NULL DEFAULT FALSE,
+                또래장 BOOLEAN NOT NULL DEFAULT FALSE
             );
             """,
             """
@@ -112,159 +115,106 @@ class Util:
         for i in range(len(init_data)):
             self.cursor.executemany(insert_table_queries[i], init_data[i])
 
-    def show(self):
-
-        # 데이터베이스 안의 모든 테이블 이름 조회
-        self.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-        tables = self.cursor.fetchall()
-
-        # 각 테이블의 컬럼 정보 조회 및 출력
-        for table in tables:
-            table_name = table[0]
-            print(f"Table: {table_name}")
-
-            self.cursor.execute(f"PRAGMA table_info({table_name});")
-            columns = self.cursor.fetchall()
-
-            for column in columns:
-                print(f"  Column: {column[1]}, Type: {column[2]}")
-            print()
-
-    def save(self, file_path):
-        try:
-            # 파일 확장자에 따라 pandas로 파일 읽기
-            if file_path.lower().endswith('.csv'):
-                df = pd.read_csv(file_path)
-            elif file_path.lower().endswith(('.xls', '.xlsx')):
-                df = pd.read_excel(file_path)
-            else:
-                raise ValueError("Unsupported file type")
-
-            # 데이터프레임을 테이블로 저장 (테이블 이름: data_table)
-            df.to_sql('data_table', self.conn, if_exists='replace', index=False)
-
-            return True
-
-        except Exception as e:
-            print(f"Error: {e}")
-            return False
-
-    def read(self):
-        try:
-            # SQL 쿼리를 사용하여 테이블에서 데이터 읽기
-            query = "SELECT * FROM data_table"
-            df = pd.read_sql_query(query, self.conn)
-            print(df)
-
-            return df
-
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
 
     def 출석파일저장(self, file_paths):
         time = [(0, 12), (0, 15), (0, 17), (-2, 21)]
         code2desc, desc2code = self.모임코드조회()
         for file_path in file_paths:
-            try:
-                if file_path:
-                    if file_path.lower().endswith(('.xls', '.xlsx')):
-                        df = pd.read_excel(file_path, header=None)
-                    else:
-                        raise ValueError("Unsupported file type")
+            if file_path:
+                if file_path.lower().endswith(('.xls', '.xlsx')):
+                    df = pd.read_excel(file_path, header=None)
+                else:
+                    raise ValueError("Unsupported file type")
 
-                    year = int(df.iloc[0, 0].split()[0][:4])
+                year = int(df.iloc[0, 0].split()[0][:4])
 
-                    # 날짜 형식 맞춰서 열마다 달아주기
-                    for col in range(3, df.shape[1], 4):
-                        if not pd.isna(df.iloc[2, col]):
-                            month = int(df.iloc[2, col].split()[1][0:-1])
-                            day = int(df.iloc[2, col].split()[2][0:-1])
-                            date = datetime.datetime(year, month, day)
-                            for i in range(4):
-                                time_date = date + datetime.timedelta(days=time[i][0], hours=time[i][1])
-                                full_date = time_date.strftime('%Y-%m-%d %H:%M:%S')
-                                df.iloc[2, col + i] = full_date
-                    # 지난 금철 => 금철로 바꾸기
-                    for col in range(3, df.shape[1]):
-                        if df.iloc[3, col] == "지난 금철":
-                            df.iloc[3, col] = "금철"
+                # 날짜 형식 맞춰서 열마다 달아주기
+                for col in range(3, df.shape[1], 4):
+                    if not pd.isna(df.iloc[2, col]):
+                        month = int(df.iloc[2, col].split()[1][0:-1])
+                        day = int(df.iloc[2, col].split()[2][0:-1])
+                        date = datetime(year, month, day)
+                        for i in range(4):
+                            time_date = date + timedelta(days=time[i][0], hours=time[i][1])
+                            full_date = time_date.strftime('%Y-%m-%d %H:%M:%S')
+                            df.iloc[2, col + i] = full_date
+                # 지난 금철 => 금철로 바꾸기
+                for col in range(3, df.shape[1]):
+                    if df.iloc[3, col] == "지난 금철":
+                        df.iloc[3, col] = "금철"
 
-                    # 사랑원 데이터 추출
-                    people_list = []
-                    for row in range(4, df.shape[0]):
-                        if df.iloc[row, 0] == "합계":
-                            break
-                        people_list.append((df.iloc[row, 0], df.iloc[row, 1], df.iloc[row, 2]))
+                # 사랑원 데이터 추출
+                people_list = []
+                for row in range(4, df.shape[0]):
+                    if df.iloc[row, 0] == "합계":
+                        break
+                    people_list.append((df.iloc[row, 0], df.iloc[row, 1], df.iloc[row, 2]))
 
-                    # 모임 데이터 입력
+                # 모임 데이터 입력
+                for col in range(3, df.shape[1]):
+                    if not pd.isna(df.iloc[3, col]):
+                        모임날짜 = df.iloc[2, col]
+                        모임구분 = desc2code[df.iloc[3, col]][0]
+                        self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
+                        result = self.cursor.fetchone()
+                        if result is None:
+                            self.cursor.execute("INSERT INTO 모임 (모임_코드, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
+                            # (f"모임 추가: {모임구분}, {모임날짜}")
+
+                # 사랑장
+                사랑장 = df.iloc[1, df.shape[1] - 2].split()[1]
+                사랑장_생년월일 = None
+                for person in people_list:
+                    if person[1] == 사랑장:
+                        사랑장_생년월일 = person[2]
+                        break;
+                self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (사랑장, 사랑장_생년월일))
+                result = self.cursor.fetchone()
+                사랑장_uid = result[0]
+
+                # 마을원 데이터
+                for person in people_list:
+                    이름 = person[1]
+                    생년월일 = person[2]
+                    self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (이름, 생년월일))
+                    result = self.cursor.fetchone()
+                    마을원_uid = result[0]
                     for col in range(3, df.shape[1]):
                         if not pd.isna(df.iloc[3, col]):
                             모임날짜 = df.iloc[2, col]
                             모임구분 = desc2code[df.iloc[3, col]][0]
+                            참석여부 = df.iloc[person[0] + 3, col]
                             self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
                             result = self.cursor.fetchone()
-                            if result is None:
-                                self.cursor.execute("INSERT INTO 모임 (모임_코드, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
-                                # (f"모임 추가: {모임구분}, {모임날짜}")
+                            모임_uid = result[0]
 
-                    # 사랑장
-                    사랑장 = df.iloc[1, df.shape[1] - 2].split()[1]
-                    사랑장_생년월일 = None
-                    for person in people_list:
-                        if person[1] == 사랑장:
-                            사랑장_생년월일 = person[2]
-                            break;
-                    self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (사랑장, 사랑장_생년월일))
-                    result = self.cursor.fetchone()
-                    사랑장_uid = result[0]
+                            self.cursor.execute("SELECT 참석여부 FROM 참석 WHERE 마을원_uid=? AND 모임_uid=?",
+                                                (마을원_uid, 모임_uid))
+                            result = self.cursor.fetchone()
+                            if result:  # 업데이트
+                                self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?",
+                                                    (참석여부, 마을원_uid, 모임_uid))
+                                # print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
+                            else:  # 인서트
+                                self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
+                                                    (마을원_uid, 모임_uid, 참석여부))
+                                # print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
 
-                    # 마을원 데이터
-                    for person in people_list:
-                        이름 = person[1]
-                        생년월일 = person[2]
-                        self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (이름, 생년월일))
-                        result = self.cursor.fetchone()
-                        마을원_uid = result[0]
-                        for col in range(3, df.shape[1]):
-                            if not pd.isna(df.iloc[3, col]):
-                                모임날짜 = df.iloc[2, col]
-                                모임구분 = desc2code[df.iloc[3, col]][0]
-                                참석여부 = df.iloc[person[0] + 3, col]
-                                self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
-                                result = self.cursor.fetchone()
-                                모임_uid = result[0]
-
-                                self.cursor.execute("SELECT 참석여부 FROM 참석 WHERE 마을원_uid=? AND 모임_uid=?",
-                                                    (마을원_uid, 모임_uid))
-                                result = self.cursor.fetchone()
-                                if result:  # 업데이트
-                                    self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?",
-                                                        (참석여부, 마을원_uid, 모임_uid))
-                                    # print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
-                                else:  # 인서트
-                                    self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
-                                                        (마을원_uid, 모임_uid, 참석여부))
-                                    # print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
-
-                            # 사랑 소속 데이터
-                            if col % 4 == 3 and not pd.isna(df.iloc[person[0] + 3, col]):
-                                날짜 = df.iloc[2, col].split()[0]
-                                self.cursor.execute("SELECT uid FROM 사랑_소속 WHERE 사랑장_uid=? AND 사랑원_uid=? AND 날짜=?",
+                        # 사랑 소속 데이터
+                        if col % 4 == 3 and not pd.isna(df.iloc[person[0] + 3, col]):
+                            날짜 = df.iloc[2, col].split()[0]
+                            self.cursor.execute("SELECT uid FROM 사랑_소속 WHERE 사랑장_uid=? AND 사랑원_uid=? AND 날짜=?",
+                                                (사랑장_uid, 마을원_uid, 날짜))
+                            사랑소속_uid = self.cursor.fetchone()
+                            if result:  # 업데이트
+                                self.cursor.execute("UPDATE 사랑_소속 SET 사랑장_uid=?, 사랑원_uid=?, 날짜=? WHERE uid=?",
+                                                    (사랑장_uid, 마을원_uid, 날짜, 사랑소속_uid[0]))
+                            else:  # 인서트
+                                self.cursor.execute("INSERT INTO 사랑_소속 (사랑장_uid, 사랑원_uid, 날짜) VALUES (?, ?, ?)",
                                                     (사랑장_uid, 마을원_uid, 날짜))
-                                사랑소속_uid = self.cursor.fetchone()
-                                if result:  # 업데이트
-                                    self.cursor.execute("UPDATE 사랑_소속 SET 사랑장_uid=?, 사랑원_uid=?, 날짜=? WHERE uid=?",
-                                                        (사랑장_uid, 마을원_uid, 날짜, 사랑소속_uid[0]))
-                                else:  # 인서트
-                                    self.cursor.execute("INSERT INTO 사랑_소속 (사랑장_uid, 사랑원_uid, 날짜) VALUES (?, ?, ?)",
-                                                        (사랑장_uid, 마을원_uid, 날짜))
 
-                print(f"{file_path} 저장 성공")
-            except Exception as e:
-                print(f"Error: {e}")
-                print(f"{file_path} 저장 중 에러 발생")
-                continue
+            print(f"{file_path} 저장 성공")
+
         return True
 
     def 마을원저장(self, file_path):
@@ -275,12 +225,12 @@ class Util:
                 raise ValueError("Unsupported file type")
 
             for index, row in df.iterrows():
-                이름, 생년월일, 전화번호, 성별 = row[0].split()[1], row[1], row[2], row[3]
+                이름, 또래, 생년월일, 전화번호, 성별 = row[0].split()[1], str(row[1])[:2], row[1], row[2], row[3]
                 self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (이름, 생년월일))
                 result = self.cursor.fetchone()
                 if result is None:
-                    self.cursor.execute("INSERT INTO 마을원 (이름, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?)",
-                                        (이름, 생년월일, 성별, 전화번호))
+                    self.cursor.execute("INSERT INTO 마을원 (이름, 또래, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?, ?)",
+                                        (이름, 또래, 생년월일, 성별, 전화번호))
                     # print(f"마을원 추가: {이름}, {생년월일}, {성별}, {전화번호}")
             return True
 
@@ -341,44 +291,6 @@ class Util:
             print(f"Error: {e}")
             return False
 
-    def read_from_db(self):
-        try:
-
-            # SQL 쿼리를 사용하여 테이블에서 데이터 읽기
-            query = "SELECT * FROM birthday ORDER BY 생일"
-            df = pd.read_sql_query(query, self.conn)
-
-            return df
-
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-    def check_birthday_db(self):
-        try:
-
-            # SQL 쿼리를 사용하여 테이블에서 데이터 읽기
-            query = "SELECT * FROM 마을원"
-            df = pd.read_sql_query(query, self.conn)
-            return df
-
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
-
-    def count_birthday_db(self):
-        try:
-
-            # SQL 쿼리를 사용하여 테이블에서 데이터 읽기
-            query = "SELECT COUNT(*) as COUNT FROM birthday"
-            res = pd.read_sql_query(query, self.conn)
-            res = res.at[0, 'COUNT']
-
-            return res
-
-        except Exception as e:
-            print(f"Error: {e}")
-            return None
 
     def select_all(self, table):
 
@@ -525,30 +437,122 @@ class Util:
 
         return result_with_header
 
-    def 또래분포조회(self):
+    def 또래분포조회(self, 장결여부, 졸업여부):
         try:
-            self.cursor.execute("SELECT SUBSTR(생년월일, 1, 2) AS 출생년도, COUNT(*) AS 인원수 FROM 마을원 GROUP BY SUBSTR(생년월일, 1, 2)")
+            # Build the base query
+            query = """
+                SELECT 또래, COUNT(*) AS 인원수 
+                FROM 마을원 
+                WHERE 1=1
+            """
+
+            # Append conditions based on the given parameters
+            if 장결여부 is not None:
+                if 장결여부:
+                    query += " AND (장결여부 = 1 OR 장결여부 = 0)"
+                else:
+                    query += " AND 장결여부 = 0"
+
+            if 졸업여부 is not None:
+                if 졸업여부:
+                    query += " AND (졸업여부 = 1 OR 졸업여부 = 0)"
+                else:
+                    query += " AND 졸업여부 = 0"
+
+            # Group by gender
+            query += " GROUP BY 또래"
+
+            # Execute the constructed query
+            self.cursor.execute(query)
         except Exception as e:
             print(f"Error: {e}")
             return None
+
+        # Fetch the results
         res = self.cursor.fetchall()
         columns = [desc[0] for desc in self.cursor.description]
 
-        # 헤더와 데이터를 포함한 결과 생성
+        # Include headers in the result
         result_with_header = [columns] + res
 
         return result_with_header
 
-    def 성별분포조회(self):
+    def 성별분포조회(self, 장결여부, 졸업여부):
         try:
-            self.cursor.execute("SELECT 성별, COUNT(*) AS 인원수 FROM 마을원 GROUP BY 성별")
+            # Build the base query
+            query = """
+                SELECT 성별, COUNT(*) AS 인원수 
+                FROM 마을원 
+                WHERE 1=1
+            """
+
+            # Append conditions based on the given parameters
+            if 장결여부 is not None:
+                if 장결여부:
+                    query += " AND (장결여부 = 1 OR 장결여부 = 0)"
+                else:
+                    query += " AND 장결여부 = 0"
+
+            if 졸업여부 is not None:
+                if 졸업여부:
+                    query += " AND (졸업여부 = 1 OR 졸업여부 = 0)"
+                else:
+                    query += " AND 졸업여부 = 0"
+
+            # Group by gender
+            query += " GROUP BY 성별"
+
+            # Execute the constructed query
+            self.cursor.execute(query)
         except Exception as e:
             print(f"Error: {e}")
             return None
+
+        # Fetch the results
         res = self.cursor.fetchall()
         columns = [desc[0] for desc in self.cursor.description]
 
-        # 헤더와 데이터를 포함한 결과 생성
+        # Include headers in the result
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 구분분포조회(self, 장결여부, 졸업여부):
+        try:
+            # Build the base query
+            query = """
+                SELECT 구분, COUNT(*) AS 인원수 
+                FROM 마을원 
+                WHERE 1=1
+            """
+
+            # Append conditions based on the given parameters
+            if 장결여부 is not None:
+                if 장결여부:
+                    query += " AND (장결여부 = 1 OR 장결여부 = 0)"
+                else:
+                    query += " AND 장결여부 = 0"
+
+            if 졸업여부 is not None:
+                if 졸업여부:
+                    query += " AND (졸업여부 = 1 OR 졸업여부 = 0)"
+                else:
+                    query += " AND 졸업여부 = 0"
+
+            # Group by gender
+            query += " GROUP BY 구분"
+
+            # Execute the constructed query
+            self.cursor.execute(query)
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+
+        # Fetch the results
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # Include headers in the result
         result_with_header = [columns] + res
 
         return result_with_header
@@ -650,6 +654,44 @@ class Util:
 
         return True
 
+    def 빠른등록(self, 마을원_uid):
+        try:
+            # Update the meeting count
+            self.cursor.execute('''
+                UPDATE 마을원
+                SET 빠른여부 = 1, 또래 = (SELECT 또래 FROM 마을원 WHERE uid = ?) - 1  
+                WHERE uid = ?
+            ''', (마을원_uid, 마을원_uid))
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
+    def 또래장등록(self, 마을원_uid):
+        try:
+            # Update the meeting count
+            self.cursor.execute('''
+                UPDATE 마을원
+                SET 또래장 = 1 
+                WHERE uid = ?
+            ''', (마을원_uid,))
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
     def 업데이트_사랑장_리더여부(self):
         try:
             # Update the meeting count
@@ -729,45 +771,45 @@ u = Util()
 # u.select_all("마을원")
 # u.select_all("참석")
 # u.select_all("모임")
-
-filtered_list = [tup for tup in u.참석조회(21)[1:] if tup[0] == 1 and tup[1] in (1, 2)]
-
-# 튜플 리스트의 날짜들을 추출하여 datetime 객체로 변환
-dates = [datetime.strptime(tup[2], '%Y-%m-%d %H:%M:%S') for tup in filtered_list]
-
-# 날짜들을 내림차순으로 정렬 (이미 정렬된 것으로 가정)
-dates.sort(reverse=True)
-
-# 가장 최근 날짜로부터 7일 간격으로 연속된 데이터 개수 계산
-continuous_count = 1  # 첫 번째 날짜는 이미 포함
-
-# 7일 간격 확인
-for i in range(1, len(dates)):
-    if (dates[i - 1] - dates[i]).days == 7:
-        continuous_count += 1
-    else:
-        break  # 7일 간격이 아닌 경우 중단
-
-# 결과 출력
-print("연속된 데이터의 개수:", continuous_count)
-
-filtered_list = [tup for tup in u.참석조회(4)[1:] if tup[0] == 1 and tup[1] == 3]
-
-# 튜플 리스트의 날짜들을 추출하여 datetime 객체로 변환
-dates = [datetime.strptime(tup[2], '%Y-%m-%d %H:%M:%S') for tup in filtered_list]
-
-# 날짜들을 내림차순으로 정렬 (이미 정렬된 것으로 가정)
-dates.sort(reverse=True)
-
-# 가장 최근 날짜로부터 7일 간격으로 연속된 데이터 개수 계산
-continuous_count = 1  # 첫 번째 날짜는 이미 포함
-
-# 7일 간격 확인
-for i in range(1, len(dates)):
-    if (dates[i - 1] - dates[i]).days == 7:
-        continuous_count += 1
-    else:
-        break  # 7일 간격이 아닌 경우 중단
-
-# 결과 출력
-print("연속된 데이터의 개수:", continuous_count)
+#
+# filtered_list = [tup for tup in u.참석조회(21)[1:] if tup[0] == 1 and tup[1] in (1, 2)]
+#
+# # 튜플 리스트의 날짜들을 추출하여 datetime 객체로 변환
+# dates = [datetime.strptime(tup[2], '%Y-%m-%d %H:%M:%S') for tup in filtered_list]
+#
+# # 날짜들을 내림차순으로 정렬 (이미 정렬된 것으로 가정)
+# dates.sort(reverse=True)
+#
+# # 가장 최근 날짜로부터 7일 간격으로 연속된 데이터 개수 계산
+# continuous_count = 1  # 첫 번째 날짜는 이미 포함
+#
+# # 7일 간격 확인
+# for i in range(1, len(dates)):
+#     if (dates[i - 1] - dates[i]).days == 7:
+#         continuous_count += 1
+#     else:
+#         break  # 7일 간격이 아닌 경우 중단
+#
+# # 결과 출력
+# print("연속된 데이터의 개수:", continuous_count)
+#
+# filtered_list = [tup for tup in u.참석조회(4)[1:] if tup[0] == 1 and tup[1] == 3]
+#
+# # 튜플 리스트의 날짜들을 추출하여 datetime 객체로 변환
+# dates = [datetime.strptime(tup[2], '%Y-%m-%d %H:%M:%S') for tup in filtered_list]
+#
+# # 날짜들을 내림차순으로 정렬 (이미 정렬된 것으로 가정)
+# dates.sort(reverse=True)
+#
+# # 가장 최근 날짜로부터 7일 간격으로 연속된 데이터 개수 계산
+# continuous_count = 1  # 첫 번째 날짜는 이미 포함
+#
+# # 7일 간격 확인
+# for i in range(1, len(dates)):
+#     if (dates[i - 1] - dates[i]).days == 7:
+#         continuous_count += 1
+#     else:
+#         break  # 7일 간격이 아닌 경우 중단
+#
+# # 결과 출력
+# print("연속된 데이터의 개수:", continuous_count)

@@ -8,7 +8,8 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMenuBar,
     QSplitter,
-    QToolTip
+    QToolTip,
+    QCheckBox, QLabel
 )
 from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
@@ -61,6 +62,30 @@ class StudentListWindow(QMainWindow):
         self.graph_window = GraphWindow()
         left_layout.addWidget(self.graph_window)
 
+        check_layout = QHBoxLayout()
+
+        # Set alignment to left
+        check_layout.setAlignment(Qt.AlignLeft)
+
+        # Create checkboxes and connect to the methods
+        self.gender_장결_include = QCheckBox('장결자 제외')
+        self.gender_장결_include.setChecked(False)  # 기본 설정은 체크 해제 상태
+        self.gender_장결_include.stateChanged.connect(self.toggle_absent_rows)
+        check_layout.addWidget(self.gender_장결_include)
+
+        self.gender_졸업_include = QCheckBox('졸업자 제외')
+        self.gender_졸업_include.setChecked(False)  # 기본 설정은 체크 해제 상태
+        self.gender_졸업_include.stateChanged.connect(self.toggle_absent_rows)
+        check_layout.addWidget(self.gender_졸업_include)
+
+        self.students = self.util.select_all("마을원")
+        count_layout = QHBoxLayout()
+        count_layout.setAlignment(Qt.AlignRight)
+        self.count_label = QLabel(f'총 {len(self.students[1:])}명')
+        count_layout.addWidget(self.count_label)
+        check_layout.addLayout(count_layout)
+        right_layout.addLayout(check_layout)
+
         # Set up the right layout with the student table and buttons
         self.students = self.util.select_all("마을원")
         self.header = ['uid'] + self.students[0][1:]
@@ -104,6 +129,14 @@ class StudentListWindow(QMainWindow):
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
+
+    def toggle_absent_rows(self, state):
+        """Toggle the visibility of rows where '장결' is marked."""
+        exclude_absent = self.gender_장결_include.isChecked()
+        exclude_graduated = self.gender_졸업_include.isChecked()
+        count = self.student_table.hide_rows_with_absence(exclude_absent, exclude_graduated)
+        self.graph_window.update_pies(exclude_absent, exclude_graduated)
+        self.count_label.setText(f'총 {count}명')
 
     def open_add_meeting_window(self):
         self.add_meeting_window = AttendanceTable()

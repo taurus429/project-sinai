@@ -35,7 +35,7 @@ class GraphWindow(QWidget):
         self.util = util.Util()
 
         # 성별 분포 데이터 가져오기
-        res = self.util.성별분포조회()
+        res = self.util.성별분포조회(False, False)
         res = res[1:]
         size = []
         label = []
@@ -52,23 +52,19 @@ class GraphWindow(QWidget):
             self.gender_pie.axes,
             sizes=size,  # 장결자 제외 기본 데이터
             labels=label,
-            title='장결자 제외'
+            title='성별 분포',
+            colors= ['#ADD8E6', '#FFB6C1']
         )
-        self.gender_pie.axes.set_title('장결자 제외', fontsize=10, fontweight='bold')
         gender_layout.addWidget(self.gender_pie)
 
-        # 성별 파이 차트를 위한 체크박스 추가
-        self.gender_check_include = QCheckBox('장결자 포함')
-        self.gender_check_include.setChecked(False)  # 기본 설정은 체크 해제 상태
-        self.gender_check_include.stateChanged.connect(self.update_gender_pie_chart)
-        gender_layout.addWidget(self.gender_check_include)
         main_pie_layout.addLayout(gender_layout)
 
         # 연령 분포 섹션 생성
         age_layout = QVBoxLayout()
 
         # 연령 분포 데이터 가져오기
-        res = self.util.또래분포조회()
+        res = self.util.또래분포조회(False, False)
+        print(res)
         res = res[1:]
         size = []
         label = []
@@ -82,16 +78,10 @@ class GraphWindow(QWidget):
             self.age_pie.axes,
             sizes=size,  # 장결자 제외 기본 데이터
             labels=label,
-            title='장결자 제외'
+            title='또래 분포'
         )
-        self.age_pie.axes.set_title('장결자 제외', fontsize=10, fontweight='bold')
         age_layout.addWidget(self.age_pie)
 
-        # 연령 파이 차트를 위한 체크박스 추가
-        self.age_check_include = QCheckBox('장결자 포함')
-        self.age_check_include.setChecked(False)  # 기본 설정은 체크 해제 상태
-        self.age_check_include.stateChanged.connect(self.update_age_pie_chart)
-        age_layout.addWidget(self.age_check_include)
         main_pie_layout.addLayout(age_layout)
 
         # 직원 평가 분포 섹션 생성
@@ -103,16 +93,9 @@ class GraphWindow(QWidget):
             self.eval_pie.axes,
             sizes=[20, 30, 25, 25],  # 장결자 제외 기본 데이터
             labels=['A', 'B', 'C', 'D'],
-            title='장결자 제외'
+            title='구분 분포'
         )
-        self.eval_pie.axes.set_title('장결자 제외', fontsize=10, fontweight='bold')
         eval_layout.addWidget(self.eval_pie)
-
-        # 직원 평가 파이 차트를 위한 체크박스 추가
-        self.eval_check_include = QCheckBox('장결자 포함')
-        self.eval_check_include.setChecked(False)  # 기본 설정은 체크 해제 상태
-        self.eval_check_include.stateChanged.connect(self.update_eval_pie_chart)
-        eval_layout.addWidget(self.eval_check_include)
         main_pie_layout.addLayout(eval_layout)
 
         # 파이 차트를 메인 레이아웃에 추가
@@ -131,15 +114,19 @@ class GraphWindow(QWidget):
 
         self.setLayout(layout)
 
-    def plot_pie_chart(self, axes, sizes, labels, title):
+    def plot_pie_chart(self, axes, sizes, labels, title, colors = None):
         """파이 차트를 그리는 함수"""
         axes.clear()
+        color = plt.cm.Paired(np.arange(len(sizes)))
+        if colors:
+            color = colors
+
         pie_result = axes.pie(
             sizes,
             labels=labels,
             autopct=None,
             startangle=90,
-            colors=plt.cm.Paired(np.arange(len(sizes)))
+            colors=color
         )
         if len(pie_result) == 2:
             wedges, texts = pie_result
@@ -150,7 +137,7 @@ class GraphWindow(QWidget):
         for text in texts:
             text.set_color('black')
         axes.axis('equal')  # 원형 비율을 유지하여 파이를 원 모양으로 그림
-        axes.set_title(title)
+        axes.set_title(title, fontsize=10, fontweight='bold')
 
         # 툴팁 기능 구현
         def update_annot(annot, wedge, size):
@@ -220,13 +207,13 @@ class GraphWindow(QWidget):
             avg_overtime = avg_overtime[:12]
 
         # 선형 차트 데이터 설정
-        line1, = axes.plot(x_labels, total_employees, marker='o', label='총 직원 수')
+        line1, = axes.plot(x_labels, total_employees, marker='o', label='총 마을원 수')
         line2, = axes.plot(x_labels, avg_attendees, marker='o', label='평균 참석자 수')
-        line3, = axes.plot(x_labels, avg_overtime, marker='o', label='평균 초과근무 수')
+        line3, = axes.plot(x_labels, avg_overtime, marker='o', label='평균 사랑모임 수')
 
         axes.set_xlabel('기간')
         axes.set_ylabel('인원 수')
-        axes.set_title(f'직원 데이터 ({period})')
+        axes.set_title(f'참석 데이터 ({period})')
         axes.legend(loc='upper left')
 
         # 주석 기능
@@ -262,26 +249,42 @@ class GraphWindow(QWidget):
         annot.set_visible(False)
         self.line_chart.mpl_connect("motion_notify_event", hover)
 
-    def update_gender_pie_chart(self):
-        """성별 파이 차트 업데이트 함수"""
-        if self.gender_check_include.isChecked():
-            sizes = [45, 55]  # 장결자 포함 예시 데이터
-            title = '장결자 포함'
-        else:
-            sizes = [40, 60]  # 장결자 제외 예시 데이터
-            title = '장결자 제외'
-        self.plot_pie_chart(self.gender_pie.axes, sizes=sizes, labels=['남', '여'], title=title)
+    def update_pies(self, 장결포함, 졸업포함):
+        self.update_gender_pie_chart(not 장결포함, not 졸업포함)
+        self.update_age_pie_chart(not 장결포함, not 졸업포함)
+
+    def update_gender_pie_chart(self, 장결포함, 졸업포함):
+        res = self.util.성별분포조회(장결포함, 졸업포함)
+        res = res[1:]
+        size = []
+        label = []
+        for r in res:
+            label.append(r[0])
+            size.append(r[1])
+
+        self.plot_pie_chart(
+            self.gender_pie.axes,
+            sizes=size,  # 장결자 제외 기본 데이터
+            labels=label,
+            title='성별 분포',
+            colors=['#ADD8E6', '#FFB6C1']
+        )
         self.gender_pie.draw()
 
-    def update_age_pie_chart(self):
-        """연령 파이 차트 업데이트 함수"""
-        if self.age_check_include.isChecked():
-            sizes = [15, 25, 35, 25]  # 장결자 포함 예시 데이터
-            title = '장결자 포함'
-        else:
-            sizes = [10, 20, 40, 30]  # 장결자 제외 예시 데이터
-            title = '장결자 제외'
-        self.plot_pie_chart(self.age_pie.axes, sizes=sizes, labels=['<18', '18-25', '26-40', '40+'], title=title)
+    def update_age_pie_chart(self, 장결포함, 졸업포함):
+        res = self.util.또래분포조회(장결포함, 졸업포함)
+        res = res[1:]
+        size = []
+        label = []
+        for r in res:
+            label.append(r[0])
+            size.append(r[1])
+        self.plot_pie_chart(
+            self.age_pie.axes,
+            sizes=size,  # 장결자 제외 기본 데이터
+            labels=label,
+            title='또래 분포',
+        )
         self.age_pie.draw()
 
     def update_eval_pie_chart(self):

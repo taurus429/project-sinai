@@ -64,6 +64,7 @@ class BusinessCardWidget(QWidget):
         titles = self.util.사랑장조회(마을원정보["uid"])
         phone = 마을원정보["전화번호"]
         birthdate = str(마을원정보["생년월일"])
+        birthyear = str(마을원정보["또래"])
 
         # Set up the main layout
         main_layout = QVBoxLayout()
@@ -75,7 +76,7 @@ class BusinessCardWidget(QWidget):
         custom_font_family = font_util.load_custom_font(font_path)
 
         # Name label
-        name_label = QLabel(f"{name} ({birthdate[:2]}또래)")
+        name_label = QLabel(f"{name} ({birthyear}또래)")
         name_label.setFont(QFont(custom_font_family, 16))
         name_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         name_title_layout.addWidget(name_label)
