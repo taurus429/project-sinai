@@ -17,7 +17,8 @@ class Util:
             "DROP TABLE IF EXISTS 사랑_소속;",
             "DROP TABLE IF EXISTS 텀;",
             "DROP TABLE IF EXISTS 마을원;",
-            "DROP TABLE IF EXISTS 모임_코드;"
+            "DROP TABLE IF EXISTS 모임_코드;",
+            "DROP TABLE IF EXISTS 구분_코드;"
         ]
 
         # 테이블 생성 쿼리
@@ -27,7 +28,7 @@ class Util:
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
                 또래 VARCHAR(3) NOT NULL,
                 이름 VARCHAR(100) NOT NULL,
-                구분 VARCHAR(2) NOT NULL DEFAULT 'A', 
+                구분 VARCHAR(2), 
                 생년월일 DATE NOT NULL,
                 성별 VARCHAR(7) NOT NULL,
                 전화번호 VARCHAR(15),
@@ -44,7 +45,8 @@ class Util:
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
                 텀이름 VARCHAR(100) NOT NULL,
                 시작주일 DATE NOT NULL,
-                마지막주일 DATE NOT NULL
+                마지막주일 DATE NOT NULL,
+                목자_uid INTEGER
             );
             """,
             """
@@ -83,15 +85,23 @@ class Util:
                 글자색깔 VARCHAR(10) NOT NULL,
                 모임횟수 INTEGER
             )
+            """,
+            """
+            CREATE TABLE 구분_코드 (
+                코드 INTEGER PRIMARY KEY AUTOINCREMENT,
+                구분이름 VARCHAR(50) NOT NULL,
+                구분색깔 VARCHAR(10) NOT NULL
+            )
             """
         ]
         # 초기 데이터
         init_data = [
             [('자체예배', '#ff595e', '#ffffff'), ('더원', '#ff595e', '#ffffff'), ('사랑모임', '#f79824', '#ffffff'), ('소울기도회', '#008148', '#ffffff'), ('금철', '#1982c4', '#ffffff'), ('대예배', '#6a4c93', '#ffffff'), ('주와나', '#ffb5a7', '#ffffff'), ('벧엘의밤', '#000000', '#ffffff'),
              ('아웃팅', '#00a896', '#ffffff'), ('리트릿', '#e9589e', '#ffffff'), ('큐티모임', '#27187e', '#ffffff'), ('선교모임', '#656d4a', '#ffffff'), ('아웃리치', '#000000', '#ffffff'), ('또래모임', '#b37dff', '#ffffff'), ('수련회', '#3e71ff', '#ffffff')]
-            , [('23년 3텀', '2023-10-15', '2023-12-31'),
-               ('24년 1텀', '2024-01-07', '2024-03-31'),
-               ('24년 2텀', '2024-04-07', '2024-12-31')]
+            , [('23년 3텀', '2023-10-15', '2023-12-31', '20'),
+               ('24년 1텀', '2024-01-07', '2024-03-31', '20'),
+               ('24년 2텀', '2024-04-07', '2024-12-31', '20')]
+            , [('L', '#F3D8C7'), ('A', '#F2BAC9'), ('B', '#F2E2BA'), ('C', '#B0F2B4'), ('D', '#BAD7F2'), ('E', '#979DAC')]
         ]
         # 초기 데이터 삽입 쿼리
         insert_table_queries = [
@@ -99,7 +109,10 @@ class Util:
             INSERT INTO 모임_코드 (설명, 배경색깔, 글자색깔) VALUES (?, ?, ?)
         """,
             """
-            INSERT INTO 텀 (텀이름, 시작주일, 마지막주일) VALUES (?, ?, ?)
+            INSERT INTO 텀 (텀이름, 시작주일, 마지막주일, 목자_uid) VALUES (?, ?, ?, ?)
+        """,
+            """
+            INSERT INTO 구분_코드 (구분이름, 구분색깔) VALUES (?, ?)
         """
         ]
 
@@ -745,6 +758,104 @@ WHERE 마을원.uid = ln.사랑원_uid;
             return None
 
         return True
+
+    def 목자이력조회(self, 마을원_uid):
+        try:
+            self.cursor.execute("SELECT 텀이름 FROM 텀 WHERE 목자_uid = ?", (마을원_uid,))
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 모임참석통계(self, 모임코드튜플):
+        placeholders = ', '.join(['?'] * len(모임코드튜플))
+        try:
+            self.cursor.execute(f"""SELECT 
+                                                m.날짜 AS 모임_날짜,
+                                                mc.설명 AS 모임_이름,
+                                                COUNT(a.마을원_uid) AS 참석자_수
+                                            FROM 
+                                                모임 AS m
+                                            JOIN 
+                                                참석 AS a ON m.uid = a.모임_uid
+                                            JOIN 
+                                                모임_코드 AS mc ON m.모임_코드 = mc.코드
+                                            WHERE 
+                                                m.모임_코드 IN ({placeholders}) 
+                                                AND a.참석여부 = 1
+                                            GROUP BY 
+                                                m.날짜, mc.설명
+                                            ORDER BY 
+                                                m.날짜;
+""", 모임코드튜플)
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 구분코드조회(self):
+        try:
+            self.cursor.execute("SELECT * FROM 구분_코드")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 참석통계조회(self, 모임코드리스트):
+        try:
+            sql = """
+                    SELECT
+                        m.uid,
+                        ROUND(
+                            (CAST(COUNT(CASE WHEN mk.코드 = 4 AND a.참석여부 = TRUE THEN 1 END) AS FLOAT) / 
+                             NULLIF(COUNT(CASE WHEN mk.코드 = 4 THEN a.모임_uid END), 0)) * 100, 2
+                        ) AS 모임_4_참석률,
+                        ROUND(
+                            (CAST(COUNT(CASE WHEN mk.코드 = 3 AND a.참석여부 = TRUE THEN 1 END) AS FLOAT) / 
+                             NULLIF(COUNT(CASE WHEN mk.코드 = 3 THEN a.모임_uid END), 0)) * 100, 2
+                        ) AS 모임_3_참석률
+                    FROM 
+                        참석 a
+                    INNER JOIN 
+                        모임 mo ON a.모임_uid = mo.uid
+                    INNER JOIN 
+                        모임_코드 mk ON mo.모임_코드 = mk.코드
+                    INNER JOIN 
+                        마을원 m ON a.마을원_uid = m.uid
+                    WHERE 
+                        mo.날짜 >= '2024-01-01'
+                    GROUP BY 
+                        m.uid;
+            """
+            self.cursor.execute("SELECT * FROM 구분_코드")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
 
     def truncate(self, table):
         # 마을원 테이블 조회

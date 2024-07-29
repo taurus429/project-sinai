@@ -10,7 +10,7 @@ class TitleWidget(QWidget):
     def __init__(self, title):
         # 커스텀 폰트 등록
         super().__init__()
-        font_path = "../asset/font/감탄로드바탕체 Regular.ttf"  # 커스텀 폰트 파일 경로
+        font_path = "../asset/font/감탄로드돋움체 Thin.ttf"  # 커스텀 폰트 파일 경로
         font_id = QFontDatabase.addApplicationFont(font_path)
         self.font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
         self.title = title
@@ -21,40 +21,76 @@ class TitleWidget(QWidget):
 
         font = QFont(self.font_family, 10)
         metrics = QFontMetrics(font)
-        if self.title[2] == 1:
+        if self.title[2] == 3:
+            text = f'{self.title[1]} 목자'
+        elif self.title[2] == 2:
+            text = f'{self.title[1]} 새가족사랑장'
+        elif self.title[2] == 1:
             text = f'{self.title[1]} 사랑장'
-        else:
+        elif self.title[2] == 0:
             text = f'{self.title[1]} {self.title[0]}사랑'
         text_width = metrics.horizontalAdvance(text)
         self.setFixedWidth(text_width + 20)  # 텍스트 너비에 여백 추가
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        rect = QRectF(0, 0, self.width(), self.height())
 
+        # 아이콘 색상 설정
         icon_color = {
             "사랑원": "#fed9b7",
             "사랑장": "#cddafd",
+            "새가족사랑장": "#cddafd",
             "목자": "#bee1e6",
         }
 
-        # Draw round rectangle
-        painter.setRenderHint(QPainter.Antialiasing)
-        if self.title[2] == 1:
-            painter.setBrush(QColor(icon_color["사랑장"]))  # 사랑장
-        else:
-            painter.setBrush(QColor(icon_color["사랑원"]))  # 사랑원
-        painter.setPen(QPen(Qt.NoPen))
-        painter.drawRoundedRect(rect, 10, 10)  # 원형 모서리 직사각형 그리기
+        # 둥근 사각형 그리기
+        painter.setRenderHint(QPainter.Antialiasing)  # 안티앨리어싱 활성화로 부드러운 경계선 처리
 
-        # Draw title text
-        painter.setPen(QColor(0, 0, 0))  # 텍스트 색상 설정
-        painter.setFont(QFont(self.font_family, 10))
-        if self.title[2] == 1:
+        # 제목 텍스트와 배경 색상 결정
+        if self.title[2] == 3:
+            text = f'{self.title[1]} 목자'
+            background_color = icon_color["목자"]
+        elif self.title[2] == 2:
+            text = f'{self.title[1]} 새가족사랑장'
+            background_color = icon_color["새가족사랑장"]
+        elif self.title[2] == 1:
             text = f'{self.title[1]} 사랑장'
-        else:
+            background_color = icon_color["사랑장"]
+        elif self.title[2] == 0:
             text = f'{self.title[1]} {self.title[0]}사랑'
-        painter.drawText(rect, Qt.AlignCenter, text)
+            background_color = icon_color["사랑원"]
+
+        # QFontMetrics를 사용하여 텍스트의 너비 계산
+        font = QFont(self.font_family, 10)  # 폰트 설정 (폰트 이름, 크기)
+        font.setWeight(QFont.Medium)  # 폰트 굵기 설정 (여기서는 Bold로 설정)
+
+        painter.setFont(font)
+        font_metrics = QFontMetrics(font)
+        text_width = font_metrics.horizontalAdvance(text)  # 텍스트 너비 측정
+
+        # 미관을 위한 여백 추가
+        padding = 20
+        rect_width = text_width + padding
+        rect_height = self.height()
+
+        # 직사각형을 화면 중앙에 위치시키기 위한 위치 계산
+        rect_x = (self.width() - rect_width) / 2
+        rect_y = 0
+
+        # 동적으로 너비를 설정한 QRectF 생성
+        rect = QRectF(rect_x, rect_y, rect_width, rect_height)
+
+        # 브러쉬 및 펜 설정
+        painter.setBrush(QColor(background_color))
+        painter.setPen(Qt.NoPen)
+
+        # 둥근 직사각형 그리기
+        painter.drawRoundedRect(rect, 10, 10)  # 동적 너비로 둥근 사각형 그리기
+
+        # 제목 텍스트 그리기
+        painter.setPen(QColor(0, 0, 0))  # 텍스트 색상 설정 (검정색)
+        painter.drawText(rect, Qt.AlignCenter, text)  # 사각형 안에 텍스트 중앙 정렬하여 그리기
+
 
 class BusinessCardWidget(QWidget):
     def __init__(self, 마을원정보):
@@ -116,7 +152,12 @@ class BusinessCardWidget(QWidget):
         titles_scroll_area.setWidget(titles_widget)
 
         titles = titles[1:]
+        목자이력 = self.util.목자이력조회(마을원정보["uid"])[1:]
+        for m in 목자이력:
+            titles.append((마을원정보["이름"], m[0], 3))
+
         titles = sorted(titles, key=lambda x: x[1], reverse=True)
+        print(titles)
         for title in titles:
             title_widget = TitleWidget(title)
             titles_layout.addWidget(title_widget)

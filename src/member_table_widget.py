@@ -1,7 +1,14 @@
 import sys
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QApplication, QStyledItemDelegate, QComboBox
+from PyQt5.QtWidgets import (
+    QTableWidget,
+    QTableWidgetItem,
+    QApplication,
+    QStyledItemDelegate,
+    QComboBox,
+)
 from PyQt5.QtGui import QColor, QCursor
 from PyQt5.QtCore import Qt
+
 
 class ComboBoxDelegate(QStyledItemDelegate):
     def __init__(self, items, parent=None):
@@ -21,16 +28,21 @@ class ComboBoxDelegate(QStyledItemDelegate):
     def setModelData(self, editor, model, index):
         model.setData(index, editor.currentText())
 
+
 class StudentTableWidget(QTableWidget):
     def __init__(self, students, header, util):
         super().__init__()
         self.util = util
         self.students = students
+        self.구분데이터 = self.util.구분코드조회()[1:]
+        self.구분색사전 = dict()
+        for 구분 in self.구분데이터:
+            self.구분색사전[구분[1]] = 구분[2]
 
-        self.header = [col if col != '장결여부' else '장결' for col in header]
-        self.header = [col if col != '졸업여부' else '졸업' for col in self.header]
-        self.header = [col if col != '리더여부' else '리더' for col in self.header]
-        self.header = [col if col != '빠른여부' else '빠른' for col in self.header]
+        self.header = [col if col != "장결여부" else "장결" for col in header]
+        self.header = [col if col != "졸업여부" else "졸업" for col in self.header]
+        self.header = [col if col != "리더여부" else "리더" for col in self.header]
+        self.header = [col if col != "빠른여부" else "빠른" for col in self.header]
 
         self.original_data = [row[:] for row in students]
 
@@ -62,31 +74,59 @@ class StudentTableWidget(QTableWidget):
 
         self.setStyleSheet("QHeaderView::section { background-color: '#F0F0F0'; }")
 
+        listbox = [name for _, name, _ in self.구분데이터]
+        listbox.append("")
         # 드롭다운 설정
-        self.setItemDelegateForColumn(self.header.index('구분'), ComboBoxDelegate(['A', 'B', 'C', 'D', 'L'], self))
+        self.setItemDelegateForColumn(
+            self.header.index("구분"), ComboBoxDelegate(listbox, self)
+        )
+        self.setItemDelegateForColumn(
+            self.header.index("성별"), ComboBoxDelegate(['남', '여'], self)
+        )
+
+        # 데이터가 변경될 때 색깔 업데이트
+        self.model().dataChanged.connect(self.update_cell_color)
 
     def populate_table(self):
         self.setRowCount(len(self.students) - 1)
         for row, student in enumerate(self.students[1:]):
             for col, data in enumerate(student):
-                if self.header[col] in ('장결', '졸업', '리더', '빠른', '또래장'):
-                    data = '✅' if data == 1 else '❌'
-                elif self.header[col] == '사랑장':
-                    data = '' if data is None else data
+                if self.header[col] in ("장결", "졸업", "리더", "빠른", "또래장"):
+                    data = "✅" if data == 1 else "❌"
+                elif self.header[col] in ("사랑장", "구분"):
+                    data = "" if data is None else data
 
                 item = QTableWidgetItem(str(data))
                 item.setTextAlignment(Qt.AlignCenter)
 
-                if self.header[col] == '성별':
-                    if data == "남":
-                        item.setBackground(QColor(173, 216, 230))
-                    else:
-                        item.setBackground(QColor(255, 182, 193))
+                # 초기 셀 색깔 설정
+                self.set_cell_color(item, col, data)
 
                 self.setItem(row, col, item)
 
+    def set_cell_color(self, item, col, data):
+        """셀의 색깔을 데이터에 기반하여 설정합니다."""
+        if self.header[col] == "성별":
+            if data == "남":
+                item.setBackground(QColor(173, 216, 230))  # Light blue
+            elif data == "여":
+                item.setBackground(QColor(255, 182, 193))  # Light pink
+        elif self.header[col] == "구분":
+            item.setBackground(QColor(self.구분색사전.get(data, "#FFFFFF")))  # 구분 색상
+
+    def update_cell_color(self, top_left, bottom_right):
+        """데이터가 변경되었을 때 셀 색깔을 업데이트합니다."""
+        for row in range(top_left.row(), bottom_right.row() + 1):
+            for col in range(top_left.column(), bottom_right.column() + 1):
+                item = self.item(row, col)
+                data = item.text() if item else ""
+                self.set_cell_color(item, col, data)
+
     def handle_header_click(self, column_index):
-        if self.last_clicked_column is not None and self.last_clicked_column != column_index:
+        if (
+            self.last_clicked_column is not None
+            and self.last_clicked_column != column_index
+        ):
             self.sort_states[self.last_clicked_column] = 0
 
         self.sort_states[column_index] = (self.sort_states[column_index] + 1) % 2
@@ -135,8 +175,10 @@ class StudentTableWidget(QTableWidget):
         return super().eventFilter(obj, event)
 
     def hide_rows_with_absence(self, 장결제외, 졸업제외):
-        absence_col_index = self.header.index('장결')  # Find the index of the "장결" column
-        graduated_col_index = self.header.index('졸업')  # Find the index of the "졸업" column
+        absence_col_index = self.header.index("장결")  # Find the index of the "장결" column
+        graduated_col_index = self.header.index(
+            "졸업"
+        )  # Find the index of the "졸업" column
 
         # Loop through each row to hide or show based on the criteria
         for row in range(self.rowCount()):
@@ -149,14 +191,15 @@ class StudentTableWidget(QTableWidget):
 
             if 장결제외 and 졸업제외:
                 # Hide if either "장결" or "졸업" is "✅"
-                hide_row = (absence_item and absence_item.text() == '✅') or \
-                           (graduated_item and graduated_item.text() == '✅')
+                hide_row = (absence_item and absence_item.text() == "✅") or (
+                    graduated_item and graduated_item.text() == "✅"
+                )
             elif 장결제외:
                 # Hide if only "장결" is "✅"
-                hide_row = absence_item and absence_item.text() == '✅'
+                hide_row = absence_item and absence_item.text() == "✅"
             elif 졸업제외:
                 # Hide if only "졸업" is "✅"
-                hide_row = graduated_item and graduated_item.text() == '✅'
+                hide_row = graduated_item and graduated_item.text() == "✅"
 
             # Set the row visibility based on the computed flag
             self.setRowHidden(row, hide_row)
@@ -171,11 +214,13 @@ class StudentTableWidget(QTableWidget):
 
         return visible_row_number
 
+
 if __name__ == "__main__":
     import util
+
     util = util.Util()
     students = util.select_all("마을원")
-    header = ['uid'] + students[0][1:]
+    header = ["uid"] + students[0][1:]
 
     app = QApplication(sys.argv)
     window = StudentTableWidget(students, header, util)
