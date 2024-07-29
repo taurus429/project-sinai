@@ -11,15 +11,17 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QMessageBox,
     QInputDialog,
+    QComboBox,
 )
 from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 import util
 
 class GradeManager(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("등급 관리")
-        self.setGeometry(100, 100, 200, 300)
+        self.setGeometry(100, 100, 320, 300)
         self.util = util.Util()
 
         # 예시 데이터 초기화
@@ -34,9 +36,13 @@ class GradeManager(QMainWindow):
 
         # 테이블 위젯
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["UID", "등급 이름", "색깔"])
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels(["UID", "구분", "색깔", "설명", "자동할당"])
         self.table.cellDoubleClicked.connect(self.change_color)  # 셀 클릭 이벤트 연결
+        self.table.setColumnWidth(1, 40)
+        self.table.setColumnWidth(2, 70)
+        self.table.setColumnWidth(3, 90)
+        self.table.setColumnWidth(4, 60)
         self.layout.addWidget(self.table)
 
         # UID 열을 숨깁니다.
@@ -73,28 +79,32 @@ class GradeManager(QMainWindow):
 
         # 새 uid는 현재 최대 uid + 1로 설정
         new_uid = max(uid for uid, _, _ in self.grades) + 1 if self.grades else 1
-        self.grades.append((new_uid, grade_name, grade_color.name()))
+        self.grades.append((new_uid, grade_name, grade_color.name(), "", "❌"))
         self.refresh_table()
 
     def update_grade(self):
-        current_row = self.table.currentRow()
-        if current_row == -1:
-            QMessageBox.warning(self, "경고", "업데이트할 등급을 선택하세요.")
-            return
+        """
+        Print the current grades data as a list of dictionaries.
+        """
+        # Extract the grades data from the table
+        grades_list = []
+        for row in range(self.table.rowCount()):
+            uid = self.table.item(row, 0).text()
+            name = self.table.item(row, 1).text()
+            color = self.table.item(row, 2).text()
+            desc = self.table.item(row, 3).text()
+            auto = self.table.cellWidget(row, 4).currentText()
 
-        grade_name, ok_pressed = self.get_grade_name(
-            initial_text=self.grades[current_row][1]
-        )
-        if not ok_pressed or not grade_name.strip():
-            return
-
-        grade_color = self.get_color(initial_color=self.grades[current_row][2])
-        if not grade_color:
-            return
-
-        uid = self.grades[current_row][0]  # 기존 uid 유지
-        self.grades[current_row] = (uid, grade_name, grade_color.name())
-        self.refresh_table()
+            # Append the grade data as a dictionary
+            grades_list.append({
+                "UID": uid,
+                "Name": name,
+                "Color": color,
+                "Desc": desc,
+                "Auto": auto
+            })
+        self.util.업데이트_구분(grades_list)
+        QMessageBox.information(self, '저장 완료', '저장에 성공했습니다', QMessageBox.Ok)
 
     def delete_grade(self):
         current_row = self.table.currentRow()
@@ -107,15 +117,28 @@ class GradeManager(QMainWindow):
 
     def refresh_table(self):
         self.table.setRowCount(len(self.grades))
-        for row, (uid, name, color) in enumerate(self.grades):
+        for row, (uid, name, color, desc, auto) in enumerate(self.grades):
             uid_item = QTableWidgetItem(str(uid))
             name_item = QTableWidgetItem(name)
             color_item = QTableWidgetItem(color)
             color_item.setBackground(QColor(color))
+            desc_item = QTableWidgetItem(desc)
+
+            # 자동할당 드롭다운 박스
+            auto_combobox = QComboBox()
+            auto_combobox.addItems(["✅", "❌"])
+            auto = "✅" if auto == 1 else "❌"
+            auto_combobox.setCurrentText(auto)
 
             self.table.setItem(row, 0, uid_item)
             self.table.setItem(row, 1, name_item)
             self.table.setItem(row, 2, color_item)
+            self.table.setItem(row, 3, desc_item)
+            self.table.setCellWidget(row, 4, auto_combobox)
+
+            # 가운데 정렬 설정
+            name_item.setTextAlignment(Qt.AlignCenter)
+            auto_combobox.setStyleSheet("QComboBox { text-align: center; }")
 
     def get_color(self, initial_color="#FFFFFF"):
         color = QColorDialog.getColor(QColor(initial_color), self, "색깔 선택")
@@ -136,7 +159,7 @@ class GradeManager(QMainWindow):
             new_color = self.get_color(initial_color=current_color)
 
             if new_color:
-                self.grades[row] = (self.grades[row][0], self.grades[row][1], new_color.name())
+                self.grades[row] = (self.grades[row][0], self.grades[row][1], new_color.name(), self.grades[row][3], self.grades[row][4])
                 self.refresh_table()
 
 if __name__ == "__main__":

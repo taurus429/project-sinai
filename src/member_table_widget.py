@@ -73,8 +73,7 @@ class StudentTableWidget(QTableWidget):
         self.verticalHeader().hide()
 
         self.setStyleSheet("QHeaderView::section { background-color: '#F0F0F0'; }")
-
-        listbox = [name for _, name, _ in self.구분데이터]
+        listbox = [name for _, name, _, _, _ in self.구분데이터]
         listbox.append("")
         # 드롭다운 설정
         self.setItemDelegateForColumn(

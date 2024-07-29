@@ -2,6 +2,9 @@ import datetime
 import sqlite3
 import pandas as pd
 import os
+
+from PyQt5.QtWidgets import QMessageBox
+
 import 날짜유틸
 from datetime import datetime, timedelta
 class Util:
@@ -90,7 +93,9 @@ class Util:
             CREATE TABLE 구분_코드 (
                 코드 INTEGER PRIMARY KEY AUTOINCREMENT,
                 구분이름 VARCHAR(50) NOT NULL,
-                구분색깔 VARCHAR(10) NOT NULL
+                구분색깔 VARCHAR(10) NOT NULL,
+                설명 VARCHAR(50),
+                자동할당 BOOLEAN NOT NULL DEFAULT TRUE
             )
             """
         ]
@@ -101,7 +106,8 @@ class Util:
             , [('23년 3텀', '2023-10-15', '2023-12-31', '20'),
                ('24년 1텀', '2024-01-07', '2024-03-31', '20'),
                ('24년 2텀', '2024-04-07', '2024-12-31', '20')]
-            , [('L', '#F3D8C7'), ('A', '#F2BAC9'), ('B', '#F2E2BA'), ('C', '#B0F2B4'), ('D', '#BAD7F2'), ('E', '#979DAC')]
+            , [('T', '#979DAC', '타지', True), ('G', '#F3D8C7', '졸업', False), ('J', '#BAD7F2', '장결', True), ('L', '#F3D8C7', '리더', False),
+               ('A', '#F2BAC9', '출석구분', True), ('B', '#F2E2BA', '출석구분', True), ('C', '#B0F2B4', '출석구분', True), ('D', '#BAD7F2', '출석구분', True), ('E', '#979DAC', '출석구분', True), ]
         ]
         # 초기 데이터 삽입 쿼리
         insert_table_queries = [
@@ -112,7 +118,7 @@ class Util:
             INSERT INTO 텀 (텀이름, 시작주일, 마지막주일, 목자_uid) VALUES (?, ?, ?, ?)
         """,
             """
-            INSERT INTO 구분_코드 (구분이름, 구분색깔) VALUES (?, ?)
+            INSERT INTO 구분_코드 (구분이름, 구분색깔, 설명, 자동할당) VALUES (?, ?, ?, ?)
         """
         ]
 
@@ -819,33 +825,9 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return result_with_header
 
-    def 참석통계조회(self, 모임코드리스트):
+    def 텀조회(self):
         try:
-            sql = """
-                    SELECT
-                        m.uid,
-                        ROUND(
-                            (CAST(COUNT(CASE WHEN mk.코드 = 4 AND a.참석여부 = TRUE THEN 1 END) AS FLOAT) / 
-                             NULLIF(COUNT(CASE WHEN mk.코드 = 4 THEN a.모임_uid END), 0)) * 100, 2
-                        ) AS 모임_4_참석률,
-                        ROUND(
-                            (CAST(COUNT(CASE WHEN mk.코드 = 3 AND a.참석여부 = TRUE THEN 1 END) AS FLOAT) / 
-                             NULLIF(COUNT(CASE WHEN mk.코드 = 3 THEN a.모임_uid END), 0)) * 100, 2
-                        ) AS 모임_3_참석률
-                    FROM 
-                        참석 a
-                    INNER JOIN 
-                        모임 mo ON a.모임_uid = mo.uid
-                    INNER JOIN 
-                        모임_코드 mk ON mo.모임_코드 = mk.코드
-                    INNER JOIN 
-                        마을원 m ON a.마을원_uid = m.uid
-                    WHERE 
-                        mo.날짜 >= '2024-01-01'
-                    GROUP BY 
-                        m.uid;
-            """
-            self.cursor.execute("SELECT * FROM 구분_코드")
+            self.cursor.execute("SELECT * FROM 텀")
         except Exception as e:
             print(f"Error: {e}")
             return None
@@ -856,6 +838,67 @@ WHERE 마을원.uid = ln.사랑원_uid;
         result_with_header = [columns] + res
 
         return result_with_header
+
+    def 참석통계조회(self, 시작날짜):
+        try:
+            sql = """
+                    SELECT
+                        m.uid, m.이름"""
+
+            for 모임코드 in self.모임코드조회()[0].keys():
+                sql += f""",
+                        ROUND(
+                            (CAST(COUNT(CASE WHEN mk.코드 = {모임코드} AND a.참석여부 = TRUE THEN 1 END) AS FLOAT) / 
+                             NULLIF(COUNT(CASE WHEN mk.코드 = {모임코드} THEN a.모임_uid END), 0)) * 100, 2
+                        ) AS 모임{모임코드}_참석률
+                        """
+            sql += """
+                        FROM 
+                            참석 a
+                        INNER JOIN 
+                            모임 mo ON a.모임_uid = mo.uid
+                        INNER JOIN 
+                            모임_코드 mk ON mo.모임_코드 = mk.코드
+                        INNER JOIN 
+                            마을원 m ON a.마을원_uid = m.uid
+                        WHERE 
+                            mo.날짜 >= ?
+                        GROUP BY 
+                            m.uid;
+                    """
+            self.cursor.execute(sql, (시작날짜, ))
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 업데이트_구분(self, 구분리스트):
+        try:
+            for 구분 in 구분리스트:
+                self.cursor.execute("""
+                        INSERT INTO 구분_코드 (코드, 구분이름, 구분색깔)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(코드) DO UPDATE SET
+                            구분이름 = excluded.구분이름,
+                            구분색깔 = excluded.구분색깔;
+                """, (구분["UID"], 구분["Name"], 구분["Color"],))
+
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            QMessageBox.critical(self, "저장 오류", f"데이터 저장 중 오류가 발생했습니다: {str(e)}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
 
     def truncate(self, table):
         # 마을원 테이블 조회

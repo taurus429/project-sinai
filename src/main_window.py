@@ -20,7 +20,8 @@ from setMeeting import MeetingApp
 from graph import GraphWindow  # Import the GraphWindow class
 from member_table_widget import StudentTableWidget
 from member_details_window import StudentDetailsWindow
-
+from grade_manager import GradeManager
+from grade_set import GradeSet
 
 class StudentListWindow(QMainWindow):
     def __init__(self):
@@ -46,6 +47,10 @@ class StudentListWindow(QMainWindow):
         meeting_menu = self.menu_bar.addMenu('모임')
         meeting_submenu1 = meeting_menu.addAction('마을 모임 보기')
         meeting_submenu2 = meeting_menu.addAction('모임 관리')
+
+        grade_menu = self.menu_bar.addMenu('구분')
+        grade_submenu1 = grade_menu.addAction('구분 부여')
+        grade_submenu2 = grade_menu.addAction('구분 관리')
 
         # Create a QSplitter to divide the window horizontally
         splitter = QSplitter(Qt.Horizontal)
@@ -128,6 +133,8 @@ class StudentListWindow(QMainWindow):
         # Connect file_submenu1 and file_submenu2 to actions
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
+        grade_submenu1.triggered.connect(self.open_grade_set_window)
+        grade_submenu2.triggered.connect(self.open_grade_manager_window)
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
     def toggle_absent_rows(self, state):
@@ -145,6 +152,14 @@ class StudentListWindow(QMainWindow):
     def open_set_meeting_window(self):
         self.set_meeting_window = MeetingApp()
         self.set_meeting_window.show()
+
+    def open_grade_set_window(self):
+        self.grade_set_window = GradeSet()
+        self.grade_set_window.show()
+
+    def open_grade_manager_window(self):
+        self.grade_manager_window = GradeManager()
+        self.grade_manager_window.show()
 
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()
