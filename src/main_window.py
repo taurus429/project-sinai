@@ -8,9 +8,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QMenuBar,
     QSplitter,
-    QToolTip
+    QToolTip,
+    QCheckBox, QLabel
 )
-from PyQt5.QtGui import QFontDatabase, QFont
+from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
 import util
 import 날짜유틸
@@ -19,14 +20,15 @@ from setMeeting import MeetingApp
 from graph import GraphWindow  # Import the GraphWindow class
 from member_table_widget import StudentTableWidget
 from member_details_window import StudentDetailsWindow
-
+from grade_manager import GradeManager
+from grade_set import GradeSet
 
 class StudentListWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.util = util.Util()
         self.setWindowTitle("마을원 명단")
-        self.setGeometry(100, 100, 1200, 800)  # Increase width and height
+        self.setGeometry(100, 100, 1200, 700)  # Increase width and height
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -46,6 +48,10 @@ class StudentListWindow(QMainWindow):
         meeting_submenu1 = meeting_menu.addAction('마을 모임 보기')
         meeting_submenu2 = meeting_menu.addAction('모임 관리')
 
+        grade_menu = self.menu_bar.addMenu('구분')
+        grade_submenu1 = grade_menu.addAction('구분 부여')
+        grade_submenu2 = grade_menu.addAction('구분 관리')
+
         # Create a QSplitter to divide the window horizontally
         splitter = QSplitter(Qt.Horizontal)
 
@@ -60,6 +66,30 @@ class StudentListWindow(QMainWindow):
         # Initialize GraphWindow and add it to the left layout
         self.graph_window = GraphWindow()
         left_layout.addWidget(self.graph_window)
+
+        check_layout = QHBoxLayout()
+
+        # Set alignment to left
+        check_layout.setAlignment(Qt.AlignLeft)
+
+        # Create checkboxes and connect to the methods
+        self.gender_장결_include = QCheckBox('장결자 제외')
+        self.gender_장결_include.setChecked(False)  # 기본 설정은 체크 해제 상태
+        self.gender_장결_include.stateChanged.connect(self.toggle_absent_rows)
+        check_layout.addWidget(self.gender_장결_include)
+
+        self.gender_졸업_include = QCheckBox('졸업자 제외')
+        self.gender_졸업_include.setChecked(False)  # 기본 설정은 체크 해제 상태
+        self.gender_졸업_include.stateChanged.connect(self.toggle_absent_rows)
+        check_layout.addWidget(self.gender_졸업_include)
+
+        self.students = self.util.select_all("마을원")
+        count_layout = QHBoxLayout()
+        count_layout.setAlignment(Qt.AlignRight)
+        self.count_label = QLabel(f'총 {len(self.students[1:])}명')
+        count_layout.addWidget(self.count_label)
+        check_layout.addLayout(count_layout)
+        right_layout.addLayout(check_layout)
 
         # Set up the right layout with the student table and buttons
         self.students = self.util.select_all("마을원")
@@ -90,7 +120,7 @@ class StudentListWindow(QMainWindow):
         main_layout.addWidget(splitter)
 
         # Set initial sizes of the splitter sections
-        splitter.setSizes([400, 800])
+        splitter.setSizes([600, 800])
 
         # Connect signals and slots
         self.student_table.cellChanged.connect(self.enable_buttons)
@@ -103,6 +133,17 @@ class StudentListWindow(QMainWindow):
         # Connect file_submenu1 and file_submenu2 to actions
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
+        grade_submenu1.triggered.connect(self.open_grade_set_window)
+        grade_submenu2.triggered.connect(self.open_grade_manager_window)
+        self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
+
+    def toggle_absent_rows(self, state):
+        """Toggle the visibility of rows where '장결' is marked."""
+        exclude_absent = self.gender_장결_include.isChecked()
+        exclude_graduated = self.gender_졸업_include.isChecked()
+        count = self.student_table.hide_rows_with_absence(exclude_absent, exclude_graduated)
+        self.graph_window.update_pies(exclude_absent, exclude_graduated)
+        self.count_label.setText(f'총 {count}명')
 
     def open_add_meeting_window(self):
         self.add_meeting_window = AttendanceTable()
@@ -111,6 +152,14 @@ class StudentListWindow(QMainWindow):
     def open_set_meeting_window(self):
         self.set_meeting_window = MeetingApp()
         self.set_meeting_window.show()
+
+    def open_grade_set_window(self):
+        self.grade_set_window = GradeSet()
+        self.grade_set_window.show()
+
+    def open_grade_manager_window(self):
+        self.grade_manager_window = GradeManager()
+        self.grade_manager_window.show()
 
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()
@@ -158,7 +207,7 @@ def main():
     # Load stylesheet from file
     with open('styles.qss', 'r', encoding='utf-8') as f:
         app.setStyleSheet(f.read())
-
+    app.setWindowIcon(QIcon('../asset/icon/icon.ico'))
     font_path = '../asset/font/감탄로드바탕체 Regular.ttf'
     font_path = '../asset/font/감탄로드돋움체 Regular.ttf'
     font_id = QFontDatabase.addApplicationFont(font_path)

@@ -55,12 +55,15 @@ class CustomLabel(QLabel):
 
 
 class MeetingItem(QWidget):
-    def __init__(self, name='', bgcolor='#FFFFFF', fgcolor='#000000'):
+    def __init__(self, code='', name='', bgcolor='#FFFFFF', fgcolor='#000000'):
         super().__init__()
-        self.initUI(name, bgcolor, fgcolor)
+        self.initUI(code, name, bgcolor, fgcolor)
 
-    def initUI(self, name, bgcolor, fgcolor):
+    def initUI(self, code, name, bgcolor, fgcolor):
         self.layout = QHBoxLayout()
+
+        self.code = QLabel(str(code))
+        self.code.setFixedWidth(50)
 
         self.nameEdit = QLineEdit(name)
         self.nameEdit.setFixedWidth(150)
@@ -88,6 +91,7 @@ class MeetingItem(QWidget):
 
         self.deleteCheckBox = QCheckBox()
 
+        self.layout.addWidget(self.code)
         self.layout.addWidget(self.nameEdit)
         self.layout.addWidget(self.bgColorLabel)
         self.layout.addWidget(self.fgColorLabel)
@@ -155,7 +159,7 @@ class MeetingApp(QWidget):
 
         self.setLayout(self.layout)
         self.setWindowTitle('모임 관리')
-        self.setGeometry(100, 100, 800, 400)
+        self.setGeometry(100, 100, 600, 400)
         self.show()
 
     def addHeader(self):
@@ -163,6 +167,8 @@ class MeetingApp(QWidget):
         header_widget = QWidget()
         header_layout = QHBoxLayout()
 
+        code_label = QLabel('코드')
+        code_label.setFixedWidth(50)
         name_label = QLabel('모임이름')
         name_label.setFixedWidth(150)
         bg_color_label = QLabel('배경색')
@@ -173,6 +179,7 @@ class MeetingApp(QWidget):
         preview_label.setFixedWidth(100)
         delete_label = QLabel('삭제여부')
 
+        header_layout.addWidget(code_label)
         header_layout.addWidget(name_label)
         header_layout.addWidget(bg_color_label)
         header_layout.addWidget(fg_color_label)
@@ -189,18 +196,18 @@ class MeetingApp(QWidget):
         self.util = Util()
         meetings = self.util.모임코드조회()
 
-        for _, name, bgcolor, fgcolor in meetings[0].values():
-            self.addMeetingItem(name, bgcolor, fgcolor)
+        for code, name, bgcolor, fgcolor in meetings[0].values():
+            self.addMeetingItem(code, name, bgcolor, fgcolor)
 
-    def addMeetingItem(self, name, bgcolor, fgcolor):
+    def addMeetingItem(self, code, name, bgcolor, fgcolor):
         item = QListWidgetItem(self.listWidget)
-        item_widget = MeetingItem(name, bgcolor, fgcolor)
+        item_widget = MeetingItem(code, name, bgcolor, fgcolor)
         item.setSizeHint(item_widget.sizeHint())
         self.listWidget.addItem(item)
         self.listWidget.setItemWidget(item, item_widget)
 
     def addRow(self):
-        self.addMeetingItem('', '#FFFFFF', '#000000')
+        self.addMeetingItem('', '', '#FFFFFF', '#000000')
 
     def saveData(self):
         for index in range(1, self.listWidget.count()):  # 0번 인덱스는 헤더
