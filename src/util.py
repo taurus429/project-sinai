@@ -95,7 +95,9 @@ class Util:
                 구분이름 VARCHAR(50) NOT NULL,
                 구분색깔 VARCHAR(10) NOT NULL,
                 설명 VARCHAR(50),
-                자동할당 BOOLEAN NOT NULL DEFAULT TRUE
+                자동할당 BOOLEAN NOT NULL DEFAULT TRUE,
+                사랑배치 BOOLEAN NOT NULL DEFAULT TRUE,
+                순서 INTEGER
             )
             """
         ]
@@ -106,8 +108,8 @@ class Util:
             , [('23년 3텀', '2023-10-15', '2023-12-31', '20'),
                ('24년 1텀', '2024-01-07', '2024-03-31', '20'),
                ('24년 2텀', '2024-04-07', '2024-12-31', '20')]
-            , [('T', '#979DAC', '타지', True), ('G', '#F3D8C7', '졸업', False), ('J', '#BAD7F2', '장결', True), ('L', '#F3D8C7', '리더', False),
-               ('A', '#F2BAC9', '출석구분', True), ('B', '#F2E2BA', '출석구분', True), ('C', '#B0F2B4', '출석구분', True), ('D', '#BAD7F2', '출석구분', True), ('E', '#979DAC', '출석구분', True), ]
+            , [('L', '#cdb4db', '리더', False, False, 1), ('T', '#b0c4b1', '타지', False, True, 2), ('G', '#d6ccc2', '졸업', False, False, 3), ('J', '#f7e1d7', '장결', False, True, 4), ('S', '#ffc8dd', '새가족', False, True, 5),
+               ('A', '#e76f51', '출석구분', True, True, 6), ('B', '#f4a261', '출석구분', True, True, 7), ('C', '#e9c46a', '출석구분', True, True, 8), ('D', '#2a9d8f', '출석구분', True, True, 9), ('E', '#457b9d', '출석구분', True, True, 10), ]
         ]
         # 초기 데이터 삽입 쿼리
         insert_table_queries = [
@@ -118,7 +120,7 @@ class Util:
             INSERT INTO 텀 (텀이름, 시작주일, 마지막주일, 목자_uid) VALUES (?, ?, ?, ?)
         """,
             """
-            INSERT INTO 구분_코드 (구분이름, 구분색깔, 설명, 자동할당) VALUES (?, ?, ?, ?)
+            INSERT INTO 구분_코드 (구분이름, 구분색깔, 설명, 자동할당, 사랑배치, 순서) VALUES (?, ?, ?, ?, ?, ?)
         """
         ]
 
@@ -640,7 +642,7 @@ class Util:
             # Update the meeting count
             self.cursor.execute('''
                 UPDATE 마을원
-                SET 장결여부 = 1 
+                SET 장결여부 = 1, 구분 = 'J' 
                 WHERE uid = ?
             ''', (마을원_uid,))
 
@@ -659,7 +661,7 @@ class Util:
             # Update the meeting count
             self.cursor.execute('''
                 UPDATE 마을원
-                SET 졸업여부 = 1 
+                SET 졸업여부 = 1 , 구분 = 'G' 
                 WHERE uid = ?
             ''', (마을원_uid,))
 
@@ -811,9 +813,14 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return result_with_header
 
-    def 구분코드조회(self):
+    def 구분코드조회(self, 자동할당 = False):
         try:
-            self.cursor.execute("SELECT * FROM 구분_코드")
+            sql = "SELECT * FROM 구분_코드 "
+            if 자동할당:
+                sql += "WHERE 자동할당 = TRUE "
+            sql += "ORDER BY 순서 ASC"
+            self.cursor.execute(sql)
+
         except Exception as e:
             print(f"Error: {e}")
             return None
@@ -862,7 +869,7 @@ WHERE 마을원.uid = ln.사랑원_uid;
                         INNER JOIN 
                             마을원 m ON a.마을원_uid = m.uid
                         WHERE 
-                            mo.날짜 >= ?
+                            mo.날짜 >= ? AND (m.구분 = '' or m.구분 IS NULL)
                         GROUP BY 
                             m.uid;
                     """
@@ -878,16 +885,22 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return result_with_header
 
-    def 업데이트_구분(self, 구분리스트):
+    def 업데이트_구분(self, 구분리스트, 삭제_uid):
         try:
+            for uid in 삭제_uid:
+                self.cursor.execute("""DELETE FROM 구분_코드 WHERE 코드 = ? """, (uid,))
             for 구분 in 구분리스트:
                 self.cursor.execute("""
-                        INSERT INTO 구분_코드 (코드, 구분이름, 구분색깔)
-                        VALUES (?, ?, ?)
+                        INSERT INTO 구분_코드 (코드, 구분이름, 구분색깔, 설명, 자동할당, 사랑배치, 순서)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                         ON CONFLICT(코드) DO UPDATE SET
                             구분이름 = excluded.구분이름,
-                            구분색깔 = excluded.구분색깔;
-                """, (구분["UID"], 구분["Name"], 구분["Color"],))
+                            구분색깔 = excluded.구분색깔,
+                            설명 = excluded.설명,
+                            자동할당 = excluded.자동할당,
+                            사랑배치 = excluded.사랑배치,
+                            순서 = excluded.순서;
+                """, (구분["코드"], 구분["구분이름"], 구분["구분색깔"], 구분["설명"], 구분["자동할당"], 구분["사랑배치"], 구분["순서"], ))
 
             # Commit the transaction to save changes
             self.conn.commit()

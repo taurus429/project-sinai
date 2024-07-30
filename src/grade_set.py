@@ -64,7 +64,6 @@ class GradeSet(QWidget):
             uid_item = QTableWidgetItem(str(uid))
             self.table_widget.setItem(row, 0, uid_item)
             uid_item.setFlags(uid_item.flags() ^ Qt.ItemIsEditable)  # UID 열은 편집 불가로 설정
-
             # 체크박스 생성
             checkbox = QCheckBox()
             checkbox.stateChanged.connect(lambda state, row=row: self.toggle_spinbox(state, row))
@@ -156,7 +155,7 @@ class GradeSet(QWidget):
         # 테이블의 모든 데이터를 출력합니다.
         rows = self.table_widget.rowCount()
         data = []
-
+        할당구분 = self.util.구분코드조회(True)
         # 선택된 날짜 가져오기
         selected_date = self.start_date_combo.currentText()
         참석통계 = self.util.참석통계조회(selected_date)[1:]
