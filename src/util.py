@@ -885,7 +885,7 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return result_with_header
 
-    def 업데이트_구분(self, 구분리스트, 삭제_uid):
+    def 업데이트_구분(self, 구분리스트, 삭제_uid = []):
         try:
             for uid in 삭제_uid:
                 self.cursor.execute("""DELETE FROM 구분_코드 WHERE 코드 = ? """, (uid,))

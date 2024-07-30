@@ -18,6 +18,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 import util
 
 class GradeManager(QMainWindow):
+    update_signal = pyqtSignal()
     def __init__(self):
         super().__init__()
         self.setWindowTitle("등급 관리")
@@ -135,12 +136,19 @@ class GradeManager(QMainWindow):
             })
         self.util.업데이트_구분(grades_list)
         QMessageBox.information(self, '저장 완료', '저장에 성공했습니다', QMessageBox.Ok)
-
+        self.update_done()
         # Update the saved state
         self.saved_grades = self.grades.copy()
 
         # Clear the deleted UIDs list after update
         self.deleted_uids.clear()
+
+    def update_done(self):
+        # ... update_done 기능 ...
+        print("Update done is called.")
+
+        # 필요한 작업 수행 후 신호 방출
+        self.update_signal.emit()
 
     def delete_grade(self):
         current_row = self.table.currentRow()

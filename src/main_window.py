@@ -92,7 +92,6 @@ class StudentListWindow(QMainWindow):
         right_layout.addLayout(check_layout)
 
         # Set up the right layout with the student table and buttons
-        self.students = self.util.select_all("마을원")
         self.header = ['uid'] + self.students[0][1:]
         self.student_table = StudentTableWidget(self.students, self.header, self.util)
         right_layout.addWidget(self.student_table)
@@ -137,6 +136,8 @@ class StudentListWindow(QMainWindow):
         grade_submenu2.triggered.connect(self.open_grade_manager_window)
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
+        self.grade_manager_window = None  # 초기값을 None으로 설정합니다.
+
     def toggle_absent_rows(self, state):
         """Toggle the visibility of rows where '장결' is marked."""
         exclude_absent = self.gender_장결_include.isChecked()
@@ -158,8 +159,14 @@ class StudentListWindow(QMainWindow):
         self.grade_set_window.show()
 
     def open_grade_manager_window(self):
-        self.grade_manager_window = GradeManager()
-        self.grade_manager_window.show()
+        if self.grade_manager_window is None:
+            self.grade_manager_window = GradeManager()
+            self.grade_manager_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+            self.grade_manager_window.show()
+        else:
+            self.grade_manager_window.show()
+            self.grade_manager_window.activateWindow()
+            self.grade_manager_window.raise_()
 
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()

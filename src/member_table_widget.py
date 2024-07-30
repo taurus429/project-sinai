@@ -231,13 +231,13 @@ class StudentTableWidget(QTableWidget):
     def refresh_data(self):
         """데이터베이스에서 최신 데이터를 가져와 테이블을 새로고침합니다."""
         self.students = self.util.select_all("마을원")  # 최신 데이터를 가져옵니다.
+        self.구분데이터 = self.util.구분코드조회()[1:]
+        self.구분색사전 = dict()
+        for 구분 in self.구분데이터:
+            self.구분색사전[구분[1]] = 구분[2]
         self.original_data = [row[:] for row in self.students]  # 원본 데이터 복사본을 업데이트합니다.
         self.populate_table()  # 테이블을 다시 채웁니다.
 
-    @pyqtSlot(str)
-    def update_data(self, data):
-        # Update the table with the new data
-        print(data)
 
 if __name__ == "__main__":
     import util
@@ -248,18 +248,9 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    # 데이터 컨트롤러의 인스턴스를 생성합니다.
-    data_controller = DataController()
-
     # 학생 테이블 위젯을 생성합니다.
     student_table_widget = StudentTableWidget(students, header, util)
-
-    # data_updated 시그널을 refresh_data 메서드에 연결합니다.
-    data_controller.data_updated.connect(student_table_widget.refresh_data)
-
     student_table_widget.resize(600, 400)
     student_table_widget.show()
-
-    data_controller.update_data()
 
     sys.exit(app.exec_())
