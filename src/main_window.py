@@ -22,6 +22,8 @@ from member_table_widget import StudentTableWidget
 from member_details_window import StudentDetailsWindow
 from grade_manager import GradeManager
 from grade_set import GradeSet
+from src.insta_window import TextGeneratorApp
+
 
 class StudentListWindow(QMainWindow):
     def __init__(self):
@@ -51,6 +53,9 @@ class StudentListWindow(QMainWindow):
         grade_menu = self.menu_bar.addMenu('구분')
         grade_submenu1 = grade_menu.addAction('구분 부여')
         grade_submenu2 = grade_menu.addAction('구분 관리')
+
+        insta_menu = self.menu_bar.addMenu('인스타')
+        insta_submenu1 = insta_menu.addAction('게시물 생성')
 
         # Create a QSplitter to divide the window horizontally
         splitter = QSplitter(Qt.Horizontal)
@@ -134,6 +139,7 @@ class StudentListWindow(QMainWindow):
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
         grade_submenu1.triggered.connect(self.open_grade_set_window)
         grade_submenu2.triggered.connect(self.open_grade_manager_window)
+        insta_submenu1.triggered.connect(self.open_insta_window)
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
         self.grade_manager_window = None  # 초기값을 None으로 설정합니다.
@@ -167,6 +173,10 @@ class StudentListWindow(QMainWindow):
             self.grade_manager_window.show()
             self.grade_manager_window.activateWindow()
             self.grade_manager_window.raise_()
+
+    def open_insta_window(self):
+        self.insta_window = TextGeneratorApp()
+        self.insta_window.show()
 
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()

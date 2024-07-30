@@ -40,7 +40,8 @@ class Util:
                 졸업여부 BOOLEAN NOT NULL DEFAULT FALSE,
                 리더여부 BOOLEAN NOT NULL DEFAULT FALSE,
                 빠른여부 BOOLEAN NOT NULL DEFAULT FALSE,
-                또래장 BOOLEAN NOT NULL DEFAULT FALSE
+                또래장 BOOLEAN NOT NULL DEFAULT FALSE,
+                FOREIGN KEY (구분) REFERENCES 구분_코드(구분이름)
             );
             """,
             """
@@ -49,7 +50,8 @@ class Util:
                 텀이름 VARCHAR(100) NOT NULL,
                 시작주일 DATE NOT NULL,
                 마지막주일 DATE NOT NULL,
-                목자_uid INTEGER
+                목자_uid INTEGER,
+                FOREIGN KEY (목자_uid) REFERENCES 마을원(uid)
             );
             """,
             """
@@ -67,7 +69,8 @@ class Util:
                 uid INTEGER PRIMARY KEY AUTOINCREMENT,
                 모임_코드 INTEGER NOT NULL,
                 날짜 DATE NOT NULL,
-                상세 VARCHAR(100)
+                상세 VARCHAR(100),
+                FOREIGN KEY (모임_코드) REFERENCES 모임_코드(코드)
             );
             """,
             """
@@ -912,6 +915,36 @@ WHERE 마을원.uid = ln.사랑원_uid;
             return None
 
         return True
+
+    def 이번주생일자조회(self, yymmdd):
+        try:
+            # 입력 날짜를 datetime 객체로 변환
+            base_date = datetime.strptime(yymmdd, "%y%m%d")
+            end_date = base_date + timedelta(days=6)
+
+            # 시작 날짜와 종료 날짜의 mmdd 형식을 추출
+            base_mmdd = base_date.strftime("%m%d")
+            end_mmdd = end_date.strftime("%m%d")
+
+            # SQL 쿼리를 사용하여 yymmdd의 날짜로부터 7일 이내의 모든 생일자를 추출
+            query = f"""
+                        SELECT 생년, strftime('%m%d', 생년월일) AS 생일, 이름 FROM birthday
+                        WHERE 
+                            생일 BETWEEN '{base_mmdd}' AND '{end_mmdd}'
+                        ORDER BY 생일 ASC
+                        """
+            self.cursor.execute(query)
+
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        birthday_list = []
+        for index, row in res.iterrows():
+            birthday_list.append(f"{row['생년']}또래 {row['이름']}({int(row['생일'][2:])}일)")
+
+        return birthday_list
+
 
     def truncate(self, table):
         # 마을원 테이블 조회
