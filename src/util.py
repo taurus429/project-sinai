@@ -21,7 +21,8 @@ class Util:
             "DROP TABLE IF EXISTS 텀;",
             "DROP TABLE IF EXISTS 마을원;",
             "DROP TABLE IF EXISTS 모임_코드;",
-            "DROP TABLE IF EXISTS 구분_코드;"
+            "DROP TABLE IF EXISTS 구분_코드;",
+            "DROP TABLE IF EXISTS 배치관계;"
         ]
 
         # 테이블 생성 쿼리
@@ -101,6 +102,15 @@ class Util:
                 자동할당 BOOLEAN NOT NULL DEFAULT TRUE,
                 사랑배치 BOOLEAN NOT NULL DEFAULT TRUE,
                 순서 INTEGER
+            )
+            """,
+            """
+            CREATE TABLE 배치관계 (
+                마을원1_uid INTEGER NOT NULL,
+                마을원2_uid INTEGER NOT NULL,
+                배치 VARCHAR(4) NOT NULL,
+                FOREIGN KEY (마을원1_uid) REFERENCES 마을원(uid),
+                FOREIGN KEY (마을원2_uid) REFERENCES 마을원(uid)
             )
             """
         ]
@@ -871,8 +881,10 @@ WHERE 마을원.uid = ln.사랑원_uid;
                             모임_코드 mk ON mo.모임_코드 = mk.코드
                         INNER JOIN 
                             마을원 m ON a.마을원_uid = m.uid
+                        LEFT JOIN
+                            구분_코드 g ON m.구분 = g.구분이름
                         WHERE 
-                            mo.날짜 >= ? AND (m.구분 = '' or m.구분 IS NULL)
+                            mo.날짜 >= ? AND (m.구분 = '' or m.구분 IS NULL OR (g.자동할당 = TRUE AND m.구분 = g.구분이름))
                         GROUP BY 
                             m.uid;
                     """
@@ -906,6 +918,21 @@ WHERE 마을원.uid = ln.사랑원_uid;
                 """, (구분["코드"], 구분["구분이름"], 구분["구분색깔"], 구분["설명"], 구분["자동할당"], 구분["사랑배치"], 구분["순서"], ))
 
             # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            QMessageBox.critical(self, "저장 오류", f"데이터 저장 중 오류가 발생했습니다: {str(e)}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
+    def 구분부여(self, 부여리스트):
+        try:
+            for b in 부여리스트:
+                self.cursor.execute("""UPDATE 마을원 SET 구분 = ? WHERE uid = ? """, (b[2], b[0]))
+                # Commit the transaction to save changes
             self.conn.commit()
 
         except Exception as e:

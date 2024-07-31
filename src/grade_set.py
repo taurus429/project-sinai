@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QT
     QAbstractItemView, QComboBox, QLabel, QHBoxLayout, QPushButton, QMessageBox
 from PyQt5.QtCore import Qt
 import util
+from src.grade_cutoff import GradeCutoff
+
 
 class GradeSet(QWidget):
     def __init__(self):
@@ -14,16 +16,27 @@ class GradeSet(QWidget):
         # "통계 시작일" 드롭다운 박스를 추가 및 구성
         self.add_statistics_start_date()
 
+        # 수평 레이아웃 생성 및 구성
+        self.horizontal_layout = QHBoxLayout()
+
         # 테이블 위젯을 생성하고 구성
         self.table_widget = QTableWidget()
-        # '구분 부여' 버튼 추가 및 구성
-        self.add_button()
         self.setup_table()
 
-        # 메인 레이아웃에 테이블 위젯 추가
-        self.main_layout.addWidget(self.table_widget)
+        # 간단한 라벨 생성
+        self.grade_cutoff = GradeCutoff()
+        self.grade_cutoff.setEnabled(False)
+        # 수평 레이아웃에 테이블과 라벨 추가
+        self.horizontal_layout.addWidget(self.table_widget)
+        self.horizontal_layout.addWidget(self.grade_cutoff)
+
+        # '구분 부여' 버튼 추가 및 구성
+        self.add_button()
+
+        # 메인 레이아웃에 수평 레이아웃 추가
+        self.main_layout.addLayout(self.horizontal_layout)
         self.setLayout(self.main_layout)
-        self.setWindowTitle("Meeting Manager")
+        self.setWindowTitle("구분 부여")
 
     def add_statistics_start_date(self):
         # 드롭다운 박스와 레이블을 위한 레이아웃 생성
@@ -107,6 +120,7 @@ class GradeSet(QWidget):
         if spinbox:
             if state == Qt.Checked:
                 spinbox.setEnabled(True)
+                spinbox.setValue(1)
             else:
                 spinbox.setEnabled(False)
                 spinbox.setValue(0)  # 스핀박스 값을 0으로 설정합니다.
@@ -155,7 +169,7 @@ class GradeSet(QWidget):
         # 테이블의 모든 데이터를 출력합니다.
         rows = self.table_widget.rowCount()
         data = []
-        할당구분 = self.util.구분코드조회(True)
+        할당구분 = self.util.구분코드조회(True)[1:]
         # 선택된 날짜 가져오기
         selected_date = self.start_date_combo.currentText()
         참석통계 = self.util.참석통계조회(selected_date)[1:]
@@ -165,15 +179,44 @@ class GradeSet(QWidget):
             score_sum = 0
             for row in range(rows):
                 percent = self.table_widget.item(row, 4).text()
-                if 참석통계[i][row+2] is not None:
-                    score_sum += 참석통계[i][row+2] * float(percent[:-1]) / float(100)
+                if 참석통계[i][row + 2] is not None:
+                    score_sum += 참석통계[i][row + 2] * float(percent[:-1]) / float(100)
             score.append((참석통계[i][0], 참석통계[i][1], score_sum))
         sorted_score = sorted(score, key=lambda x: x[2], reverse=True)
+        print(할당구분)
         print(sorted_score)
+
+        num_sections = len(할당구분)
+        section_size = len(sorted_score) // num_sections
+
+        # 섹션을 나누고 각 섹션에 대해 할당구분의 등급을 매핑
+        result = []
+        for i in range(num_sections):
+            start_index = i * section_size
+            end_index = (i + 1) * section_size if i < num_sections - 1 else len(sorted_score)
+
+            section_scores = sorted_score[start_index:end_index]
+            grade = 할당구분[i][1]  # 각 섹션에 해당하는 할당구분의 등급
+            for score in section_scores:
+                result.append((score[0], score[1], grade))
+
+        # 결과 출력
+        print(result)
+        self.util.구분부여(result)
+
         # 선택된 날짜와 데이터를 함께 출력
         message = f"선택된 날짜: {selected_date}\n\n" + "\n".join(data)
         QMessageBox.information(self, "전체 데이터", message)
 
+    def toggle_widgets(self, layout, enabled):
+        # 레이아웃의 모든 위젯을 비활성화하거나 활성화
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.setEnabled(enabled)
+                # 위젯이 숨겨져 있는 경우는 visible 상태도 변경할 수 있음
+                widget.setVisible(enabled)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

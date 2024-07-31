@@ -66,7 +66,6 @@ class GraphWindow(QWidget):
 
         # 연령 분포 데이터 가져오기
         res = self.util.또래분포조회(False, False)
-        print(res)
         res = res[1:]
         size = []
         label = []
@@ -86,16 +85,30 @@ class GraphWindow(QWidget):
 
         main_pie_layout.addLayout(age_layout)
 
-        # 직원 평가 분포 섹션 생성
+        # 구분 분포 섹션 생성
         eval_layout = QVBoxLayout()
 
-        # 직원 평가 파이 차트 생성
+        # 구분 파이 차트 생성
+        res = self.util.구분분포조회(False, False)
+        res = res[1:]
+        size = []
+        label = []
+        color = []
+        구분데이터 = self.util.구분코드조회()[1:]
+        구분색 = dict()
+        for g in 구분데이터:
+            구분색[g[1]] = g[2]
+        for r in res:
+            label.append(r[0])
+            size.append(r[1])
+            color.append(구분색[r[0]])
         self.eval_pie = MplCanvas(self, width=2, height=2, dpi=100)
         self.plot_pie_chart(
             self.eval_pie.axes,
-            sizes=[20, 30, 25, 25],  # 장결자 제외 기본 데이터
-            labels=['A', 'B', 'C', 'D'],
-            title='구분 분포'
+            sizes=size,  # 장결자 제외 기본 데이터
+            labels=label,
+            title='구분 분포',
+            colors=color
         )
         eval_layout.addWidget(self.eval_pie)
         main_pie_layout.addLayout(eval_layout)
