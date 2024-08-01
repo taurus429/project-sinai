@@ -972,6 +972,22 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return birthday_list
 
+    def 배치대상조회(self):
+        try:
+            self.cursor.execute("""SELECT * FROM 마을원 m
+                                    JOIN 구분_코드 g
+                                    ON m.구분 = g.구분이름
+                                    WHERE 사랑배치 = 1;""")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
 
     def truncate(self, table):
         # 마을원 테이블 조회

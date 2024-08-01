@@ -98,6 +98,8 @@ class GraphWindow(QWidget):
         구분색 = dict()
         for g in 구분데이터:
             구분색[g[1]] = g[2]
+        구분색[None] = '#F0F0F0'
+        구분색[''] = '#F0F0F0'
         for r in res:
             label.append(r[0])
             size.append(r[1])

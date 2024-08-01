@@ -5,13 +5,12 @@ from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QTimer, QMimeData
 from PyQt5.QtGui import QDrag, QPixmap
 import sys
 import random
-from list_manager import ListManager  # 새로 추가한 명단 관리 창
-
+from list_manager import ListManager  # Assuming this is a custom module
 
 class DraggableLabel(QLabel):
-    def __init__(self, member, parent=None):
-        super().__init__(member, parent)
-        self.member = member
+    def __init__(self, member_tuple, parent=None):
+        super().__init__(member_tuple[1], parent)  # Use the name for display
+        self.member_tuple = member_tuple
         self.setAlignment(Qt.AlignCenter)
         self.setStyleSheet("border: 1px solid red; background-color: white;")
         self.setFixedSize(100, 30)
@@ -22,16 +21,16 @@ class DraggableLabel(QLabel):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
-            # 드래그 시작
+            # Start the drag operation
             drag = QDrag(self)
             mime_data = QMimeData()
-            mime_data.setText(self.member)
+            mime_data.setText(self.member_tuple[1])  # Use the name for drag data
             drag.setMimeData(mime_data)
             drag.setHotSpot(event.pos() - self.rect().topLeft())
 
-            # 드래그 중인 박스의 이미지 생성
+            # Generate an image of the box being dragged
             pixmap = QPixmap(self.size())
-            self.render(pixmap)  # 현재 위젯의 시각적 상태를 pixmap에 렌더링
+            self.render(pixmap)  # Render the current widget's visual state to pixmap
 
             drag.setPixmap(pixmap)
 
@@ -61,28 +60,35 @@ class TeamAllocator(QWidget):
     def __init__(self):
         super().__init__()
 
-        # 샘플 데이터로 팀원 이름 리스트 생성
-        self.members = ["Alice", "Bob", "Charlie", "David", "Eve", "Frank"]
+        # Sample data with tuples (uid, name, age, phone number)
+        self.members = [
+            (1, "Alice", 30, "123-456-7890"),
+            (2, "Bob", 25, "234-567-8901"),
+            (3, "Charlie", 35, "345-678-9012"),
+            (4, "David", 28, "456-789-0123"),
+            (5, "Eve", 40, "567-890-1234"),
+            (6, "Eve", 32, "678-901-2345"),
+        ]
         self.teams = [[] for _ in range(6)]
 
         # Separate and companion lists
         self.separate_list = []
         self.companion_list = []
 
-        # UI 초기화
+        # Initialize UI
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle('Random Team Allocator')
         self.setGeometry(100, 100, 800, 600)
 
-        # 메인 레이아웃 설정
+        # Main layout
         main_layout = QVBoxLayout()
 
-        # 상단에 명단 관리 버튼 추가
+        # Manage list button at the top
         manage_button_layout = QHBoxLayout()
 
-        # 명단 관리 창 열기 버튼
+        # Button to open the list manager
         manage_button = QPushButton("명단 관리", self)
         manage_button.clicked.connect(self.openListManager)
 
@@ -90,7 +96,7 @@ class TeamAllocator(QWidget):
 
         main_layout.addLayout(manage_button_layout)
 
-        # 상단에 팀원 표시 영역
+        # Display area for current member
         self.current_member_label = QLabel("", self)
         self.current_member_label.setAlignment(Qt.AlignCenter)
         self.current_member_label.setStyleSheet("background-color: lightblue; font-size: 20px;")
@@ -98,17 +104,17 @@ class TeamAllocator(QWidget):
 
         main_layout.addWidget(self.current_member_label, alignment=Qt.AlignCenter)
 
-        # 팀 공간 레이아웃
+        # Team area layout
         self.team_layouts = []
         team_area = QHBoxLayout()
-
+        self.current_index = 0
         for i in range(6):
             team_layout = QVBoxLayout()
             team_label = QLabel(f"Team {i + 1}", self)
             team_label.setAlignment(Qt.AlignCenter)
             team_layout.addWidget(team_label)
 
-            # 드롭 영역 설정
+            # Set up drop area
             team_widget = TeamWidget(i, self)
             team_widget.setLayout(team_layout)
             team_widget.dragEnterEvent = self.dragEnterEvent
@@ -119,7 +125,7 @@ class TeamAllocator(QWidget):
 
         main_layout.addLayout(team_area)
 
-        # 할당 버튼
+        # Assign button
         self.assign_button = QPushButton("Assign Teams", self)
         self.assign_button.clicked.connect(self.startAssigningTeams)
         main_layout.addWidget(self.assign_button, alignment=Qt.AlignCenter)
@@ -132,44 +138,44 @@ class TeamAllocator(QWidget):
         self.list_manager_window.show()
 
     def startAssigningTeams(self):
-        # 할당 버튼 비활성화
+        # Disable assign button
         self.assign_button.setEnabled(False)
 
-        # 모든 팀원을 무작위로 섞음
+        # Shuffle all members randomly
         random.shuffle(self.members)
 
-        # QTimer를 사용하여 주기적으로 assignNextTeam을 호출
+        # Use QTimer to periodically call assignNextTeam
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.assignNextTeam)
-        self.timer.start(300)  # 300ms마다 호출
+        self.timer.start(300)  # Call every 300ms
 
     def assignNextTeam(self):
-        # 팀원이 남아있으면 다음 팀원 할당
+        # Assign the next team member if there are any left
         if self.current_index < len(self.members):
             member = self.members[self.current_index]
-            self.current_member_label.setText(member)
+            self.current_member_label.setText(member[1])  # Display the name
             self.animateAssignment(member)
             self.current_index += 1
         else:
-            # 모든 팀원을 할당했으면 타이머 정지
+            # Stop the timer when all members have been assigned
             self.timer.stop()
             self.current_member_label.setText("Done!")
 
     def animateAssignment(self, member):
-        # 팀을 무작위로 선택
+        # Select a random team
         team_index = random.randint(0, 5)
 
-        # 팀 공간에 이름 추가
+        # Add the name to the team area
         member_label = DraggableLabel(member, self)
 
-        # 애니메이션 설정
+        # Set up animation
         start_rect = self.current_member_label.geometry()
         team_layout = self.team_layouts[team_index].layout()
         num_members = len(self.teams[team_index])
         team_x = self.team_layouts[team_index].geometry().x()
         team_y = self.team_layouts[team_index].geometry().y() + (member_label.height() * (num_members + 1))
 
-        # 실제 팀원 추가
+        # Actually add the member
         self.teams[team_index].append(member_label)
         team_layout.addWidget(member_label)
 
@@ -182,30 +188,30 @@ class TeamAllocator(QWidget):
         self.animation.start()
 
     def resetCurrentMemberLabel(self):
-        # 애니메이션 종료 후 현재 팀원 라벨을 상단 중앙으로 되돌림
+        # Return the current member label to the top center after animation ends
         self.current_member_label.setGeometry(350, 50, 100, 50)
 
     def dragEnterEvent(self, event):
-        # 드래그 이벤트 허용
+        # Allow drag events
         event.accept()
 
     def dropEvent(self, event, index):
-        # 드롭된 데이터 가져오기
+        # Get the dropped data
         member_name = event.mimeData().text()
 
-        # 기존 팀에서 팀원을 제거하고 새 팀에 추가
+        # Remove the member from the existing team and add to the new team
         for team_index, team in enumerate(self.teams):
             for label in team:
                 if label.text() == member_name:
-                    # 기존 팀에서 라벨 제거
+                    # Remove label from the existing team
                     self.teams[team_index].remove(label)
                     self.team_layouts[team_index].layout().removeWidget(label)
 
-                    # 새 팀에 라벨 추가
+                    # Add label to the new team
                     self.teams[index].append(label)
                     self.team_layouts[index].layout().addWidget(label)
 
-                    return  # 드롭 처리 후 종료
+                    return  # Exit after processing the drop
 
 
 if __name__ == '__main__':
