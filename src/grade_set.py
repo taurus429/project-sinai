@@ -1,12 +1,13 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QCheckBox, QSpinBox, \
     QAbstractItemView, QComboBox, QLabel, QHBoxLayout, QPushButton, QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 import util
 from src.grade_cutoff import GradeCutoff
 
 
 class GradeSet(QWidget):
+    update_signal = pyqtSignal()
     def __init__(self):
         super().__init__()
         self.util = util.Util()
@@ -203,6 +204,7 @@ class GradeSet(QWidget):
         # 결과 출력
         print(result)
         self.util.구분부여(result)
+        self.update_done()
 
         # 선택된 날짜와 데이터를 함께 출력
         message = f"선택된 날짜: {selected_date}\n\n" + "\n".join(data)
@@ -217,6 +219,13 @@ class GradeSet(QWidget):
                 widget.setEnabled(enabled)
                 # 위젯이 숨겨져 있는 경우는 visible 상태도 변경할 수 있음
                 widget.setVisible(enabled)
+
+    def update_done(self):
+        # ... update_done 기능 ...
+        print("Update done is called.")
+
+        # 필요한 작업 수행 후 신호 방출
+        self.update_signal.emit()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

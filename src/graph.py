@@ -312,6 +312,7 @@ class GraphWindow(QWidget):
     def update_pies(self, 장결포함, 졸업포함):
         self.update_gender_pie_chart(not 장결포함, not 졸업포함)
         self.update_age_pie_chart(not 장결포함, not 졸업포함)
+        self.update_eval_pie_chart(not 장결포함, not 졸업포함)
 
     def update_gender_pie_chart(self, 장결포함, 졸업포함):
         res = self.util.성별분포조회(장결포함, 졸업포함)
@@ -347,15 +348,30 @@ class GraphWindow(QWidget):
         )
         self.age_pie.draw()
 
-    def update_eval_pie_chart(self):
-        """직원 평가 파이 차트 업데이트 함수"""
-        if self.eval_check_include.isChecked():
-            sizes = [25, 30, 20, 25]  # 장결자 포함 예시 데이터
-            title = '장결자 포함'
-        else:
-            sizes = [20, 30, 25, 25]  # 장결자 제외 예시 데이터
-            title = '장결자 제외'
-        self.plot_pie_chart(self.eval_pie.axes, sizes=sizes, labels=['A', 'B', 'C', 'D'], title=title)
+    def update_eval_pie_chart(self, 장결포함, 졸업포함):
+        res = self.util.구분분포조회(장결포함, 졸업포함)
+        res = res[1:]
+        print(res)
+        size = []
+        label = []
+        color = []
+        구분데이터 = self.util.구분코드조회()[1:]
+        구분색 = dict()
+        for g in 구분데이터:
+            구분색[g[1]] = g[2]
+        구분색[None] = '#F0F0F0'
+        구분색[''] = '#F0F0F0'
+        for r in res:
+            label.append(r[0])
+            size.append(r[1])
+            color.append(구분색[r[0]])
+        self.plot_pie_chart(
+            self.eval_pie.axes,
+            sizes=size,
+            labels=label,
+            title='구분 분포',
+            colors=color
+        )
         self.eval_pie.draw()
 
     def update_line_chart(self):

@@ -6,6 +6,8 @@ from PyQt5.QtGui import QDrag, QPixmap
 import sys
 import random
 from list_manager import ListManager  # Assuming this is a custom module
+from src import util
+
 
 class DraggableLabel(QLabel):
     def __init__(self, member_tuple, parent=None):
@@ -60,20 +62,15 @@ class TeamAllocator(QWidget):
     def __init__(self):
         super().__init__()
 
-        # Sample data with tuples (uid, name, age, phone number)
-        self.members = [
-            (1, "Alice", 30, "123-456-7890"),
-            (2, "Bob", 25, "234-567-8901"),
-            (3, "Charlie", 35, "345-678-9012"),
-            (4, "David", 28, "456-789-0123"),
-            (5, "Eve", 40, "567-890-1234"),
-            (6, "Eve", 32, "678-901-2345"),
-        ]
-        self.teams = [[] for _ in range(6)]
+        self.util = util.Util()
+        배치대상 = self.util.배치대상조회()[1:]
 
-        # Separate and companion lists
-        self.separate_list = []
-        self.companion_list = []
+        # Sample data with tuples (uid, name, age, phone number)
+        self.members = []
+        for b in 배치대상:
+            self.members.append((b[0], b[2], b[1], b[3], b[5]))
+        self.members = sorted(self.members, key=lambda x: x[1])
+        self.teams = [[] for _ in range(6)]
 
         # Initialize UI
         self.initUI()
@@ -134,7 +131,7 @@ class TeamAllocator(QWidget):
 
     def openListManager(self):
         # Open the list manager window for managing both separate and companion lists
-        self.list_manager_window = ListManager(self, self.separate_list, self.companion_list, self.members)
+        self.list_manager_window = ListManager(self, self.members)
         self.list_manager_window.show()
 
     def startAssigningTeams(self):

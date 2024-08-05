@@ -989,6 +989,38 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return result_with_header
 
+    def 배치관계조회(self):
+        try:
+            self.cursor.execute("""SELECT * FROM 배치관계""")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
+
+    def 업데이트_배치관계(self, 관계리스트):
+        try:
+            # Update the meeting count
+            self.cursor.execute("""DELETE FROM 배치관계""")
+
+            for 관계 in 관계리스트:
+                self.cursor.execute("""INSERT INTO 배치관계 (마을원1_uid, 마을원2_uid, 배치) VALUES (?, ?, ?)"""
+                                    , (관계[0], 관계[1], 관계[2],))
+            # Commit the transaction to save changes
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
     def truncate(self, table):
         # 마을원 테이블 조회
         self.cursor.execute(f"DELETE FROM {table};")

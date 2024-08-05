@@ -84,7 +84,7 @@ class StudentListWindow(QMainWindow):
         check_layout.addWidget(self.gender_장결_include)
 
         self.gender_졸업_include = QCheckBox('졸업자 제외')
-        self.gender_졸업_include.setChecked(False)  # 기본 설정은 체크 해제 상태
+        self.gender_졸업_include.setChecked(True)  # 기본 설정은 체크 해제 상태
         self.gender_졸업_include.stateChanged.connect(self.toggle_absent_rows)
         check_layout.addWidget(self.gender_졸업_include)
 
@@ -143,8 +143,11 @@ class StudentListWindow(QMainWindow):
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
         self.grade_manager_window = None  # 초기값을 None으로 설정합니다.
+        self.grade_set_window = None  # 초기값을 None으로 설정합니다.
 
-    def toggle_absent_rows(self, state):
+        self.toggle_absent_rows()
+
+    def toggle_absent_rows(self):
         """Toggle the visibility of rows where '장결' is marked."""
         exclude_absent = self.gender_장결_include.isChecked()
         exclude_graduated = self.gender_졸업_include.isChecked()
@@ -161,8 +164,14 @@ class StudentListWindow(QMainWindow):
         self.set_meeting_window.show()
 
     def open_grade_set_window(self):
-        self.grade_set_window = GradeSet()
-        self.grade_set_window.show()
+        if self.grade_set_window is None:
+            self.grade_set_window = GradeSet()
+            self.grade_set_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+            self.grade_set_window.show()
+        else:
+            self.grade_set_window.show()
+            self.grade_set_window.activateWindow()
+            self.grade_set_window.raise_()
 
     def open_grade_manager_window(self):
         if self.grade_manager_window is None:
