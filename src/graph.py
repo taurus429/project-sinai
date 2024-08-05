@@ -351,7 +351,6 @@ class GraphWindow(QWidget):
     def update_eval_pie_chart(self, 장결포함, 졸업포함):
         res = self.util.구분분포조회(장결포함, 졸업포함)
         res = res[1:]
-        print(res)
         size = []
         label = []
         color = []

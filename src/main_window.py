@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import (
     QMenuBar,
     QSplitter,
     QToolTip,
-    QCheckBox, QLabel
+    QCheckBox,
+    QLabel
 )
 from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
@@ -202,8 +203,15 @@ class StudentListWindow(QMainWindow):
         self.reset_button.setEnabled(False)
 
     def save_changes(self):
+        # Get only the changed data
         changed_data = self.student_table.get_changed_data()
-        print("Changed Data:", changed_data)
+        if changed_data:
+            print("Changed Data:")
+            for row_index, row_data in changed_data:
+                print(f"Row {row_index}: {row_data}")
+        else:
+            print("No changes detected.")
+
         self.save_button.setEnabled(False)
         self.reset_button.setEnabled(False)
 

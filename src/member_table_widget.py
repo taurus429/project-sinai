@@ -83,6 +83,9 @@ class StudentTableWidget(QTableWidget):
         listbox = [name for _, name, _, _, _, _, _ in self.구분데이터]
         listbox.append("")
 
+        # Define the items for "장결", "졸업", "리더", "빠른", "또래장" columns.
+        status_options = ["✅", "❌"]
+
         # 드롭다운 설정
         self.setItemDelegateForColumn(
             self.header.index("구분"), ComboBoxDelegate(listbox, self)
@@ -90,6 +93,12 @@ class StudentTableWidget(QTableWidget):
         self.setItemDelegateForColumn(
             self.header.index("성별"), ComboBoxDelegate(['남', '여'], self)
         )
+        # Apply ComboBoxDelegate to columns 8 to 12 for status options.
+        for column_name in ["장결", "졸업", "리더", "빠른", "또래장"]:
+            if column_name in self.header:
+                self.setItemDelegateForColumn(
+                    self.header.index(column_name), ComboBoxDelegate(status_options, self)
+                )
 
         # 데이터가 변경될 때 색깔 업데이트
         self.model().dataChanged.connect(self.update_cell_color)
@@ -149,14 +158,34 @@ class StudentTableWidget(QTableWidget):
             self.horizontalHeader().setSortIndicator(column_index, Qt.DescendingOrder)
 
     def get_changed_data(self):
-        # 변경된 데이터를 가져옵니다.
+        # Get only changed data and convert "✅" to 1 and "❌" to 0.
         changed_data = []
+        original_data_no_header = self.original_data[1:]
         for row in range(self.rowCount()):
             row_data = []
+            changed = False
             for col in range(self.columnCount()):
                 item = self.item(row, col)
-                row_data.append(item.text() if item else "")
-            changed_data.append(row_data)
+                data = item.text() if item else ""
+                original_data = str(original_data_no_header[row][col]) if row < len(original_data_no_header) else ""
+
+                # Convert "✅" to 1 and "❌" to 0 for comparison.
+                if self.header[col] in ("장결", "졸업", "리더", "빠른", "또래장"):
+                    data = 1 if data == "✅" else 0
+                    original_data = int(original_data) if original_data.isdigit() else original_data
+
+                # Check if current data differs from the original data.
+                if data != original_data:
+                    if (data == '' and original_data == 'None') or (data == 'None' or original_data == ''):
+                        continue
+                    changed = True
+                    break
+
+                row_data.append(data)
+
+            if changed:
+                changed_data.append((row, row_data))  # Store the row index and data if changed.
+
         return changed_data
 
     def reset_changes(self):
