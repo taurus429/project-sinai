@@ -1,16 +1,20 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QCheckBox, QSpinBox, \
-    QAbstractItemView, QComboBox, QLabel, QHBoxLayout, QPushButton, QMessageBox
+    QAbstractItemView, QComboBox, QLabel, QHBoxLayout, QPushButton, QMessageBox, QSizePolicy
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QResizeEvent
+from PyQt5.QtWidgets import QHeaderView
 import util
 from src.grade_cutoff import GradeCutoff
 
 
 class GradeSet(QWidget):
     update_signal = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.util = util.Util()
+
         # 애플리케이션의 메인 레이아웃
         self.main_layout = QVBoxLayout()
 
@@ -26,7 +30,8 @@ class GradeSet(QWidget):
 
         # 간단한 라벨 생성
         self.grade_cutoff = GradeCutoff()
-        self.grade_cutoff.setEnabled(False)
+        #self.grade_cutoff.setEnabled(False)
+
         # 수평 레이아웃에 테이블과 라벨 추가
         self.horizontal_layout.addWidget(self.table_widget)
         self.horizontal_layout.addWidget(self.grade_cutoff)
@@ -38,6 +43,9 @@ class GradeSet(QWidget):
         self.main_layout.addLayout(self.horizontal_layout)
         self.setLayout(self.main_layout)
         self.setWindowTitle("구분 부여")
+
+        # 창 크기 고정 (선택 사항)
+        # self.setFixedSize(800, 600)
 
     def add_statistics_start_date(self):
         # 드롭다운 박스와 레이블을 위한 레이아웃 생성
@@ -78,6 +86,7 @@ class GradeSet(QWidget):
             uid_item = QTableWidgetItem(str(uid))
             self.table_widget.setItem(row, 0, uid_item)
             uid_item.setFlags(uid_item.flags() ^ Qt.ItemIsEditable)  # UID 열은 편집 불가로 설정
+
             # 체크박스 생성
             checkbox = QCheckBox()
             checkbox.stateChanged.connect(lambda state, row=row: self.toggle_spinbox(state, row))
@@ -107,6 +116,18 @@ class GradeSet(QWidget):
 
         # UID 열 숨기기
         self.table_widget.setColumnHidden(0, True)  # UID 열 숨기기
+
+        # 열 크기 고정
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+
+        # 열 너비 고정 (임의로 설정한 값)
+        self.table_widget.setColumnWidth(1, 30)  # 체크
+        self.table_widget.setColumnWidth(2, 90)  # 항목
+        self.table_widget.setColumnWidth(3, 40)  # 비중
+        self.table_widget.setColumnWidth(4, 50)  # 퍼센트
+
+        # 테이블 위젯의 크기 정책 설정 (고정 크기)
+        self.table_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
 
     def add_button(self):
         # '구분 부여' 버튼을 생성하고 클릭 시 동작을 설정합니다.
@@ -226,6 +247,7 @@ class GradeSet(QWidget):
 
         # 필요한 작업 수행 후 신호 방출
         self.update_signal.emit()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
