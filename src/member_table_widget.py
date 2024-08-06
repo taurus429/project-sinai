@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, pyqtSlot
-
+import color as cUtil
 
 class ComboBoxDelegate(QStyledItemDelegate):
     def __init__(self, items, parent=None):
@@ -129,7 +129,10 @@ class StudentTableWidget(QTableWidget):
             elif data == "여":
                 item.setBackground(QColor(255, 182, 193))  # 연한 분홍색
         elif self.header[col] == "구분":
-            item.setBackground(QColor(self.구분색사전.get(data, "#FFFFFF")))  # 구분 색상
+            color = self.구분색사전.get(data, "#FFFFFF")
+            item.setBackground(QColor(color))  # 구분 색상
+            item.setForeground(QColor(cUtil.get_contrast_color(color)))
+
 
     def update_cell_color(self, top_left, bottom_right):
         """데이터가 변경되었을 때 셀 색깔을 업데이트합니다."""
@@ -167,25 +170,32 @@ class StudentTableWidget(QTableWidget):
             for col in range(self.columnCount()):
                 item = self.item(row, col)
                 data = item.text() if item else ""
-                original_data = str(original_data_no_header[row][col]) if row < len(original_data_no_header) else ""
+                if original_data_no_header[row][col] is None:
+                    original_data = None
+                elif row < len(original_data_no_header):
+                    original_data = str(original_data_no_header[row][col])
+                else:
+                    original_data = ""
 
                 # Convert "✅" to 1 and "❌" to 0 for comparison.
                 if self.header[col] in ("장결", "졸업", "리더", "빠른", "또래장"):
                     data = 1 if data == "✅" else 0
                     original_data = int(original_data) if original_data.isdigit() else original_data
 
+                # Convert "" to None and None to None for comparison.
+                if self.header[col] in ("구분", "사랑장"):
+                    data = None if data == "" else data
+                    original_data = None if original_data == "" else original_data
+
                 # Check if current data differs from the original data.
                 if data != original_data:
-                    if (data == '' and original_data == 'None') or (data == 'None' or original_data == ''):
+                    if data is None and original_data is None:
                         continue
                     changed = True
-                    break
 
                 row_data.append(data)
-
             if changed:
-                changed_data.append((row, row_data))  # Store the row index and data if changed.
-
+                changed_data.append(row_data)  # Store the row index and data if changed.
         return changed_data
 
     def reset_changes(self):

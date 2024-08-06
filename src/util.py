@@ -1021,6 +1021,36 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
         return True
 
+    def 업데이트_마을원(self, 마을원리스트):
+        try:
+            column_names = [
+                "또래", "이름", "구분", "생년월일", "성별", "전화번호", "사랑장", "장결여부", "졸업여부", "리더여부", "빠른여부", "또래장"
+            ]
+            for 마을원 in 마을원리스트:
+                uid = 마을원[0]  # 리스트의 첫 번째 요소가 uid
+
+                # 컬럼명과 값을 매핑
+                update_columns = column_names  # id 제외
+                update_values = 마을원[1:]  # uid 제외
+
+                # UPDATE 쿼리 작성
+                set_clause = ", ".join([f"{col} = ?" for col in update_columns])
+
+                sql = f"""
+                            UPDATE 마을원
+                            SET {set_clause}
+                            WHERE uid = ?
+                            """
+                # SQL 쿼리 실행
+                self.cursor.execute(sql, (*update_values, uid))
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
     def truncate(self, table):
         # 마을원 테이블 조회
         self.cursor.execute(f"DELETE FROM {table};")

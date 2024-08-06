@@ -98,12 +98,14 @@ class GraphWindow(QWidget):
         구분색 = dict()
         for g in 구분데이터:
             구분색[g[1]] = g[2]
-        구분색[None] = '#F0F0F0'
-        구분색[''] = '#F0F0F0'
+        구분색["미배정"] = '#F0F0F0'
         for r in res:
-            label.append(r[0])
+            l = r[0]
+            if r[0] is None:
+                l = "미배정"
+            label.append(l)
             size.append(r[1])
-            color.append(구분색[r[0]])
+            color.append(구분색[l])
         self.eval_pie = MplCanvas(self, width=2, height=2, dpi=100)
         self.plot_pie_chart(
             self.eval_pie.axes,
@@ -135,7 +137,6 @@ class GraphWindow(QWidget):
         # 날짜를 정렬된 리스트로 변환
         sorted_dates = sorted(dates_set)
 
-        print(sorted_dates)
         # 데이터 범위를 선택하기 위한 드롭다운 메뉴 추가
         self.dropdown = QComboBox()
         self.dropdown.addItems(['최근 6달', '최근 12달', '최근 6주', '최근 12주'])

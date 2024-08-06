@@ -149,7 +149,6 @@ class StudentListWindow(QMainWindow):
         self.toggle_absent_rows()
 
     def toggle_absent_rows(self):
-        """Toggle the visibility of rows where '장결' is marked."""
         exclude_absent = self.gender_장결_include.isChecked()
         exclude_graduated = self.gender_졸업_include.isChecked()
         count = self.student_table.hide_rows_with_absence(exclude_absent, exclude_graduated)
@@ -168,6 +167,7 @@ class StudentListWindow(QMainWindow):
         if self.grade_set_window is None:
             self.grade_set_window = GradeSet()
             self.grade_set_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+            self.grade_set_window.update_signal.connect(self.toggle_absent_rows)
             self.grade_set_window.show()
         else:
             self.grade_set_window.show()
@@ -178,6 +178,7 @@ class StudentListWindow(QMainWindow):
         if self.grade_manager_window is None:
             self.grade_manager_window = GradeManager()
             self.grade_manager_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+            self.grade_manager_window.update_signal.connect(self.toggle_absent_rows)
             self.grade_manager_window.show()
         else:
             self.grade_manager_window.show()
@@ -206,9 +207,9 @@ class StudentListWindow(QMainWindow):
         # Get only the changed data
         changed_data = self.student_table.get_changed_data()
         if changed_data:
-            print("Changed Data:")
-            for row_index, row_data in changed_data:
-                print(f"Row {row_index}: {row_data}")
+            self.util.업데이트_마을원(changed_data)
+            self.student_table.refresh_data()
+            self.toggle_absent_rows()
         else:
             print("No changes detected.")
 
