@@ -2,7 +2,6 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QCheckBox, QSpinBox, \
     QAbstractItemView, QComboBox, QLabel, QHBoxLayout, QPushButton, QMessageBox, QSizePolicy
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QHeaderView
 import util
 from src.grade_cutoff import GradeCutoff
@@ -14,7 +13,7 @@ class GradeSet(QWidget):
     def __init__(self):
         super().__init__()
         self.util = util.Util()
-
+        self.grade = self.util.구분코드조회(True)[1:]
         # 애플리케이션의 메인 레이아웃
         self.main_layout = QVBoxLayout()
 
@@ -30,17 +29,18 @@ class GradeSet(QWidget):
 
         # 간단한 라벨 생성
         self.grade_cutoff = GradeCutoff()
-        #self.grade_cutoff.setEnabled(False)
+        # self.grade_cutoff.setEnabled(False)
 
         # 수평 레이아웃에 테이블과 라벨 추가
         self.horizontal_layout.addWidget(self.table_widget)
         self.horizontal_layout.addWidget(self.grade_cutoff)
 
-        # '구분 부여' 버튼 추가 및 구성
-        self.add_button()
-
         # 메인 레이아웃에 수평 레이아웃 추가
         self.main_layout.addLayout(self.horizontal_layout)
+
+        # 버튼 레이아웃 추가
+        self.add_buttons()
+
         self.setLayout(self.main_layout)
         self.setWindowTitle("구분 부여")
 
@@ -129,12 +129,26 @@ class GradeSet(QWidget):
         # 테이블 위젯의 크기 정책 설정 (고정 크기)
         self.table_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
 
-    def add_button(self):
+    def add_buttons(self):
+        # 버튼을 담을 수평 레이아웃 생성
+        button_layout = QHBoxLayout()
+
         # '구분 부여' 버튼을 생성하고 클릭 시 동작을 설정합니다.
         self.assign_button = QPushButton("구분 부여")
         self.assign_button.clicked.connect(self.show_data)
         self.assign_button.setEnabled(False)
-        self.main_layout.addWidget(self.assign_button)
+
+        # '적용' 버튼을 생성하고 클릭 시 동작을 설정합니다.
+        self.apply_button = QPushButton("적용")
+        self.apply_button.clicked.connect(self.apply_changes)
+
+        # 버튼 레이아웃에 버튼 추가
+        button_layout.addWidget(self.assign_button)
+        button_layout.addWidget(self.apply_button)
+
+        # 버튼 레이아웃을 메인 레이아웃에 추가하여 하단에 배치
+        self.main_layout.addLayout(button_layout)
+
 
     def toggle_spinbox(self, state, row):
         # 현재 행의 스핀박스 위젯을 가져옵니다.
@@ -191,11 +205,9 @@ class GradeSet(QWidget):
         # 테이블의 모든 데이터를 출력합니다.
         rows = self.table_widget.rowCount()
         data = []
-        할당구분 = self.util.구분코드조회(True)[1:]
         # 선택된 날짜 가져오기
         selected_date = self.start_date_combo.currentText()
         참석통계 = self.util.참석통계조회(selected_date)[1:]
-
         score = []
         for i in range(len(참석통계)):
             score_sum = 0
@@ -205,31 +217,31 @@ class GradeSet(QWidget):
                     score_sum += 참석통계[i][row + 2] * float(percent[:-1]) / float(100)
             score.append((참석통계[i][0], 참석통계[i][1], score_sum))
         sorted_score = sorted(score, key=lambda x: x[2], reverse=True)
-        print(할당구분)
-        print(sorted_score)
 
-        num_sections = len(할당구분)
+        num_sections = len(self.grade)
         section_size = len(sorted_score) // num_sections
-
-        # 섹션을 나누고 각 섹션에 대해 할당구분의 등급을 매핑
+        boundary_values = []
         result = []
         for i in range(num_sections):
             start_index = i * section_size
             end_index = (i + 1) * section_size if i < num_sections - 1 else len(sorted_score)
-
+            boundary_values.append(sorted_score[end_index - 1][2])
             section_scores = sorted_score[start_index:end_index]
-            grade = 할당구분[i][1]  # 각 섹션에 해당하는 할당구분의 등급
+            grade = self.grade[i][1]  # 각 섹션에 해당하는 할당구분의 등급
             for score in section_scores:
-                result.append((score[0], score[1], grade))
+                result.append([score[0], score[1], score[2], grade])
+        self.grade_cutoff.allocate_grades(boundary_values, result)
 
-        # 결과 출력
-        print(result)
-        self.util.구분부여(result)
-        self.update_done()
+        #self.util.구분부여(result)
+        #self.update_done()
 
         # 선택된 날짜와 데이터를 함께 출력
         message = f"선택된 날짜: {selected_date}\n\n" + "\n".join(data)
         QMessageBox.information(self, "전체 데이터", message)
+
+    def apply_changes(self):
+        # '적용' 버튼 클릭 시 동작 정의
+        QMessageBox.information(self, "적용", "Changes have been applied successfully.")
 
     def toggle_widgets(self, layout, enabled):
         # 레이아웃의 모든 위젯을 비활성화하거나 활성화

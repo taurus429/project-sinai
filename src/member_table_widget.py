@@ -56,6 +56,8 @@ class StudentTableWidget(QTableWidget):
         self.populate_table()
 
         self.setColumnHidden(0, True)  # uid 컬럼 숨기기
+        self.setColumnHidden(13, True)
+        self.setColumnHidden(14, True)
 
         # 컬럼 너비 설정
         self.setColumnWidth(1, 40)
