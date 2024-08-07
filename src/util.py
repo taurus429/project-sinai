@@ -42,6 +42,8 @@ class Util:
                 리더여부 BOOLEAN NOT NULL DEFAULT FALSE,
                 빠른여부 BOOLEAN NOT NULL DEFAULT FALSE,
                 또래장 BOOLEAN NOT NULL DEFAULT FALSE,
+                마을합류일 DATE,
+                최근출석일 DATE,
                 FOREIGN KEY (구분) REFERENCES 구분_코드(구분이름)
             );
             """,
@@ -247,6 +249,7 @@ class Util:
                                 self.cursor.execute("INSERT INTO 사랑_소속 (사랑장_uid, 사랑원_uid, 날짜) VALUES (?, ?, ?)",
                                                     (사랑장_uid, 마을원_uid, 날짜))
 
+            self.업데이트_마을합류일()
             print(f"{file_path} 저장 성공")
 
         return True
@@ -1051,6 +1054,44 @@ WHERE 마을원.uid = ln.사랑원_uid;
             return None
 
         return True
+
+    def 업데이트_마을합류일(self):
+        try:
+            sql = f"""UPDATE 마을원
+                        SET 
+                            마을합류일 = (
+                                SELECT MIN(모임.날짜)
+                                FROM 참석
+                                INNER JOIN 모임 ON 참석.모임_uid = 모임.uid
+                                WHERE 참석.마을원_uid = 마을원.uid
+                                  AND 참석.참석여부 = TRUE
+                            ),
+                            최근출석일 = (
+                                SELECT MAX(모임.날짜)
+                                FROM 참석
+                                INNER JOIN 모임 ON 참석.모임_uid = 모임.uid
+                                WHERE 참석.마을원_uid = 마을원.uid
+                                  AND 참석.참석여부 = TRUE
+                            )
+                        WHERE EXISTS (
+                            SELECT 1
+                            FROM 참석
+                            INNER JOIN 모임 ON 참석.모임_uid = 모임.uid
+                            WHERE 참석.마을원_uid = 마을원.uid
+                              AND 참석.참석여부 = TRUE
+                        );
+                        """
+            # SQL 쿼리 실행
+            self.cursor.execute(sql)
+            self.conn.commit()
+
+        except Exception as e:
+            print(f"Error: {e}")
+            self.conn.rollback()  # Rollback changes on error
+            return None
+
+        return True
+
     def truncate(self, table):
         # 마을원 테이블 조회
         self.cursor.execute(f"DELETE FROM {table};")
