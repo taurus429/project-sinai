@@ -232,16 +232,10 @@ class GradeSet(QWidget):
                 result.append([score[0], score[1], score[2], grade])
         self.grade_cutoff.allocate_grades(boundary_values, result)
 
-        #self.util.구분부여(result)
-        #self.update_done()
-
-        # 선택된 날짜와 데이터를 함께 출력
-        message = f"선택된 날짜: {selected_date}\n\n" + "\n".join(data)
-        QMessageBox.information(self, "전체 데이터", message)
-
     def apply_changes(self):
-        # '적용' 버튼 클릭 시 동작 정의
-        QMessageBox.information(self, "적용", "Changes have been applied successfully.")
+        self.util.구분부여(self.grade_cutoff.result_grade)
+        self.update_done()
+        QMessageBox.information(self, "적용", "마을원 구분이 적용되었습니다.")
 
     def toggle_widgets(self, layout, enabled):
         # 레이아웃의 모든 위젯을 비활성화하거나 활성화

@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+    QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QTimer, QMimeData
 from PyQt5.QtGui import QDrag, QPixmap
@@ -72,6 +72,8 @@ class TeamAllocator(QWidget):
         self.members = sorted(self.members, key=lambda x: x[1])
         self.teams = [[] for _ in range(6)]
 
+        # Open the list manager window for managing both separate and companion lists
+        self.list_manager_window = ListManager(self)
         # Initialize UI
         self.initUI()
 
@@ -86,11 +88,13 @@ class TeamAllocator(QWidget):
         manage_button_layout = QHBoxLayout()
 
         # Button to open the list manager
-        manage_button = QPushButton("명단 관리", self)
+        manage_button = QPushButton("동반/분리 명단 관리", self)
+        manage_button.setFixedWidth(180)  # Set button width to 100
         manage_button.clicked.connect(self.openListManager)
 
+        # Add the button and labels to the layout
         manage_button_layout.addWidget(manage_button)
-
+        manage_button_layout.setAlignment(Qt.AlignLeft)
         main_layout.addLayout(manage_button_layout)
 
         # Display area for current member
@@ -101,13 +105,25 @@ class TeamAllocator(QWidget):
 
         main_layout.addWidget(self.current_member_label, alignment=Qt.AlignCenter)
 
+        마을원 = self.util.마을원전체조회()[1:]
+        리더리스트 = [tup for tup in 마을원 if tup[3] == 'L']
         # Team area layout
         self.team_layouts = []
         team_area = QHBoxLayout()
         self.current_index = 0
-        for i in range(6):
+        for i, 리더 in enumerate(리더리스트):
             team_layout = QVBoxLayout()
-            team_label = QLabel(f"Team {i + 1}", self)
+
+            # Create checkboxes for grades A to E
+            checkbox_layout = QVBoxLayout()
+            for grade in ['A', 'B', 'C', 'D', 'E']:
+                checkbox = QCheckBox(grade)
+                checkbox_layout.addWidget(checkbox)
+
+            # Add the checkbox layout above the team label
+            team_layout.addLayout(checkbox_layout)
+
+            team_label = QLabel(f"{리더[2]} 사랑", self)
             team_label.setAlignment(Qt.AlignCenter)
             team_layout.addWidget(team_label)
 
@@ -122,6 +138,14 @@ class TeamAllocator(QWidget):
 
         main_layout.addLayout(team_area)
 
+        # Add warning area
+        self.warning_label = QLabel("", self)
+        self.warning_label.setAlignment(Qt.AlignCenter)
+        self.warning_label.setStyleSheet("color: red; font-size: 18px;")
+        self.warning_label.setFixedHeight(50)
+
+        main_layout.addWidget(self.warning_label, alignment=Qt.AlignCenter)
+
         # Assign button
         self.assign_button = QPushButton("Assign Teams", self)
         self.assign_button.clicked.connect(self.startAssigningTeams)
@@ -130,9 +154,8 @@ class TeamAllocator(QWidget):
         self.setLayout(main_layout)
 
     def openListManager(self):
-        # Open the list manager window for managing both separate and companion lists
-        self.list_manager_window = ListManager(self, self.members)
         self.list_manager_window.show()
+        # Refresh counts after showing list manager
 
     def startAssigningTeams(self):
         # Disable assign button
@@ -192,6 +215,20 @@ class TeamAllocator(QWidget):
         # Allow drag events
         event.accept()
 
+    def updateWarning(self):
+        # Check if any team has both '김원호' and '박찬호'
+        rule_violation = False
+        for team in self.teams:
+            names = [label.text() for label in team]
+            if '김원호' in names and '최지훈' in names:
+                rule_violation = True
+                break
+
+        if rule_violation:
+            self.warning_label.setText("규칙 위반")
+        else:
+            self.warning_label.setText("")
+
     def dropEvent(self, event, index):
         # Get the dropped data
         member_name = event.mimeData().text()
@@ -208,6 +245,8 @@ class TeamAllocator(QWidget):
                     self.teams[index].append(label)
                     self.team_layouts[index].layout().addWidget(label)
 
+                    # Update warning after dropping
+                    self.updateWarning()
                     return  # Exit after processing the drop
 
 

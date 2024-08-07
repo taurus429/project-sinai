@@ -164,15 +164,10 @@ class StudentListWindow(QMainWindow):
         self.set_meeting_window.show()
 
     def open_grade_set_window(self):
-        if self.grade_set_window is None:
-            self.grade_set_window = GradeSet()
-            self.grade_set_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
-            self.grade_set_window.update_signal.connect(self.toggle_absent_rows)
-            self.grade_set_window.show()
-        else:
-            self.grade_set_window.show()
-            self.grade_set_window.activateWindow()
-            self.grade_set_window.raise_()
+        self.grade_set_window = GradeSet()
+        self.grade_set_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+        self.grade_set_window.update_signal.connect(self.toggle_absent_rows)
+        self.grade_set_window.show()
 
     def open_grade_manager_window(self):
         if self.grade_manager_window is None:

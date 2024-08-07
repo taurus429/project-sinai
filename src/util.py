@@ -934,7 +934,7 @@ WHERE 마을원.uid = ln.사랑원_uid;
     def 구분부여(self, 부여리스트):
         try:
             for b in 부여리스트:
-                self.cursor.execute("""UPDATE 마을원 SET 구분 = ? WHERE uid = ? """, (b[2], b[0]))
+                self.cursor.execute("""UPDATE 마을원 SET 구분 = ? WHERE uid = ? """, (b[3], b[0]))
                 # Commit the transaction to save changes
             self.conn.commit()
 
@@ -1027,7 +1027,7 @@ WHERE 마을원.uid = ln.사랑원_uid;
     def 업데이트_마을원(self, 마을원리스트):
         try:
             column_names = [
-                "또래", "이름", "구분", "생년월일", "성별", "전화번호", "사랑장", "장결여부", "졸업여부", "리더여부", "빠른여부", "또래장"
+                "또래", "이름", "구분", "생년월일", "성별", "전화번호", "사랑장", "장결여부", "졸업여부", "리더여부", "빠른여부", "또래장", "마을합류일", "최근출석일"
             ]
             for 마을원 in 마을원리스트:
                 uid = 마을원[0]  # 리스트의 첫 번째 요소가 uid
