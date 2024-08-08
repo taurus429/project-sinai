@@ -13,7 +13,16 @@ plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 # plt.rcParams['font.family'] = 'NanumGothic'  # Linux 또는 macOS에서는 이 줄의 주석을 해제하고 사용하세요.
 
 plt.style.use('ggplot')  # 그래프 스타일 설정
-
+age_colors = {"91": "#d9ed92",
+                      "92": "#b5e48c",
+                      "93": "#99d98c",
+                      "94": "#76c893",
+                      "95": "#52b69a",
+                      "96": "#34a0a4",
+                      "97": "#168aad",
+                      "98": "#1a759f",
+                      "99": "#1e6091",
+                      "00": "#184e77"}
 
 class MplCanvas(FigureCanvas):
     """Matplotlib 캔버스를 위한 클래스"""
@@ -66,13 +75,14 @@ class GraphWindow(QWidget):
 
         # 연령 분포 데이터 가져오기
         res = self.util.또래분포조회(False, False)
-        print(res)
         res = res[1:]
         size = []
         label = []
+        color = []
         for r in res:
             label.append(r[0])
             size.append(r[1])
+            color.append(age_colors[r[0]])
 
         # 연령 파이 차트 생성
         self.age_pie = MplCanvas(self, width=2, height=2, dpi=100)
@@ -80,22 +90,41 @@ class GraphWindow(QWidget):
             self.age_pie.axes,
             sizes=size,  # 장결자 제외 기본 데이터
             labels=label,
-            title='또래 분포'
+            title='또래 분포',
+            colors=color
         )
         age_layout.addWidget(self.age_pie)
 
         main_pie_layout.addLayout(age_layout)
 
-        # 직원 평가 분포 섹션 생성
+        # 구분 분포 섹션 생성
         eval_layout = QVBoxLayout()
 
-        # 직원 평가 파이 차트 생성
+        # 구분 파이 차트 생성
+        res = self.util.구분분포조회(False, False)
+        res = res[1:]
+        size = []
+        label = []
+        color = []
+        구분데이터 = self.util.구분코드조회()[1:]
+        구분색 = dict()
+        for g in 구분데이터:
+            구분색[g[1]] = g[2]
+        구분색["미배정"] = '#F0F0F0'
+        for r in res:
+            l = r[0]
+            if r[0] is None:
+                l = "미배정"
+            label.append(l)
+            size.append(r[1])
+            color.append(구분색[l])
         self.eval_pie = MplCanvas(self, width=2, height=2, dpi=100)
         self.plot_pie_chart(
             self.eval_pie.axes,
-            sizes=[20, 30, 25, 25],  # 장결자 제외 기본 데이터
-            labels=['A', 'B', 'C', 'D'],
-            title='구분 분포'
+            sizes=size,  # 장결자 제외 기본 데이터
+            labels=label,
+            title='구분 분포',
+            colors=color
         )
         eval_layout.addWidget(self.eval_pie)
         main_pie_layout.addLayout(eval_layout)
@@ -120,7 +149,6 @@ class GraphWindow(QWidget):
         # 날짜를 정렬된 리스트로 변환
         sorted_dates = sorted(dates_set)
 
-        print(sorted_dates)
         # 데이터 범위를 선택하기 위한 드롭다운 메뉴 추가
         self.dropdown = QComboBox()
         self.dropdown.addItems(['최근 6달', '최근 12달', '최근 6주', '최근 12주'])
@@ -194,7 +222,6 @@ class GraphWindow(QWidget):
         canvas = axes.figure.canvas
         canvas.mpl_connect("motion_notify_event", hover)
 
-    import matplotlib.pyplot as plt
 
     def plot_line_chart(self, axes, period, meetings_data, sorted_dates):
         """선형 차트를 그리는 함수"""
@@ -297,6 +324,7 @@ class GraphWindow(QWidget):
     def update_pies(self, 장결포함, 졸업포함):
         self.update_gender_pie_chart(not 장결포함, not 졸업포함)
         self.update_age_pie_chart(not 장결포함, not 졸업포함)
+        self.update_eval_pie_chart(not 장결포함, not 졸업포함)
 
     def update_gender_pie_chart(self, 장결포함, 졸업포함):
         res = self.util.성별분포조회(장결포함, 졸업포함)
@@ -321,26 +349,43 @@ class GraphWindow(QWidget):
         res = res[1:]
         size = []
         label = []
+        color = []
         for r in res:
             label.append(r[0])
             size.append(r[1])
+            color.append(age_colors[r[0]])
         self.plot_pie_chart(
             self.age_pie.axes,
             sizes=size,  # 장결자 제외 기본 데이터
             labels=label,
             title='또래 분포',
+            colors=color
         )
         self.age_pie.draw()
 
-    def update_eval_pie_chart(self):
-        """직원 평가 파이 차트 업데이트 함수"""
-        if self.eval_check_include.isChecked():
-            sizes = [25, 30, 20, 25]  # 장결자 포함 예시 데이터
-            title = '장결자 포함'
-        else:
-            sizes = [20, 30, 25, 25]  # 장결자 제외 예시 데이터
-            title = '장결자 제외'
-        self.plot_pie_chart(self.eval_pie.axes, sizes=sizes, labels=['A', 'B', 'C', 'D'], title=title)
+    def update_eval_pie_chart(self, 장결포함, 졸업포함):
+        res = self.util.구분분포조회(장결포함, 졸업포함)
+        res = res[1:]
+        size = []
+        label = []
+        color = []
+        구분데이터 = self.util.구분코드조회()[1:]
+        구분색 = dict()
+        for g in 구분데이터:
+            구분색[g[1]] = g[2]
+        구분색[None] = '#F0F0F0'
+        구분색[''] = '#F0F0F0'
+        for r in res:
+            label.append(r[0])
+            size.append(r[1])
+            color.append(구분색[r[0]])
+        self.plot_pie_chart(
+            self.eval_pie.axes,
+            sizes=size,
+            labels=label,
+            title='구분 분포',
+            colors=color
+        )
         self.eval_pie.draw()
 
     def update_line_chart(self):

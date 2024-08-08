@@ -8,22 +8,38 @@ from PyQt5.QtCore import QDate
 from PyQt5.QtGui import QFont, QFontDatabase, QIcon
 import util
 import setting as s
+from datetime import datetime
 
 class CalendarPopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        # Create a QCalendarWidget instance
         self.calendar = QCalendarWidget()
+
+        # Set the grid lines to be visible
         self.calendar.setGridVisible(True)
+
+        # Set the current date as the selected date
         self.calendar.setSelectedDate(QDate.currentDate())
+
+        # Hide the vertical header (week numbers)
+        self.calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
+
+        # Connect the calendar's clicked signal to the date selection handler
         self.calendar.clicked.connect(self.on_date_selected)
 
+        # Set up the layout
         layout = QVBoxLayout()
         layout.addWidget(self.calendar)
         self.setLayout(layout)
+
+        # Set the window title and modality
         self.setWindowTitle('날짜 선택')
         self.setModal(True)
 
     def on_date_selected(self, date):
+        # Store the selected date and close the dialog
         self.selected_date = date
         self.accept()
 
@@ -34,6 +50,7 @@ class TextGeneratorApp(QMainWindow):
 
         self.setting = s.Setting()
         self.settings = self.setting.get_settings()
+        self.util = util.Util()
 
         if 'darkmode' in self.settings.keys():
             self.dark_mode = self.settings["darkmode"]
@@ -310,7 +327,7 @@ class TextGeneratorApp(QMainWindow):
                     }
                 """
         self.light_stylesheet = ""
-
+        self.birthday_list = []
         # 초기 테마 설정
         self.set_theme()
 
@@ -335,6 +352,9 @@ class TextGeneratorApp(QMainWindow):
         if calendar_popup.exec_():
             selected_date = calendar_popup.selected_date.toString('yyyy-MM-dd')
             self.date_edit.setText(selected_date)
+            selected_date = calendar_popup.selected_date.toString('yyMMdd')
+            if self.setting.get_settings("birthday_file") is not None:
+                self.birthday_list = self.util.이번주생일자조회(selected_date)
 
     def on_type_changed(self):
         if self.type_combo.currentText() == '블로그':
@@ -405,6 +425,12 @@ class TextGeneratorApp(QMainWindow):
         content = self.content_edit.toPlainText()
         pray = self.pray_combo.currentText()
 
+        weekday = datetime.date(int(date[:4]), int(date[5:7]), int(date[8:10])).weekday()
+        week = ['월', '화', '수', '목', '금', '토', '일']
+        if text_type in ['마하나임 예배', '더원 예배'] and weekday != 6:
+            QMessageBox.warning(self, '요일 오입력 방지', f'{text_type} 날짜가 {week[weekday]}요일로 입력되어있습니다.')
+
+
         result = f"{date[2:4]}.{date[5:7]}.{date[8:10]} {text_type}\n\n"
         if title:
             result += f"[{title}] {scripture}\n\n"
@@ -425,6 +451,13 @@ class TextGeneratorApp(QMainWindow):
         result += f"📣 이번 주 기도인도: {pray}\n"
         if self.outing_radio1.isChecked():
             result += "❗️ 더원 예배 뒤에 아웃팅 있습니다!\n"
+
+        if len(self.birthday_list) != 0:
+            result += "🎂 이번 주 생일자: "
+            for b in self.birthday_list:
+                result += f"{b}, "
+            result = result[:-2]
+            result += "\n"
 
         if self.qt_check1 or self.qt_check2 or self.qt_check3 or self.qt_check4 or self.qt_check5:
             day = ""

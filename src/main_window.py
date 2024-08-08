@@ -9,10 +9,13 @@ from PyQt5.QtWidgets import (
     QMenuBar,
     QSplitter,
     QToolTip,
-    QCheckBox, QLabel
+    QCheckBox,
+    QLabel, QMessageBox
 )
 from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
+from matplotlib import pyplot as plt
+
 import util
 import 날짜유틸
 from meeting import AttendanceTable
@@ -22,6 +25,10 @@ from member_table_widget import StudentTableWidget
 from member_details_window import StudentDetailsWindow
 from grade_manager import GradeManager
 from grade_set import GradeSet
+from src.assign import TeamAllocator
+from src.insta_window import TextGeneratorApp
+
+plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 
 class StudentListWindow(QMainWindow):
     def __init__(self):
@@ -40,9 +47,8 @@ class StudentListWindow(QMainWindow):
         file_submenu1 = file_menu.addAction('파일 서브메뉴 1')
         file_submenu2 = file_menu.addAction('파일 서브메뉴 2')
 
-        settings_menu = self.menu_bar.addMenu('설정')
-        settings_submenu1 = settings_menu.addAction('설정 서브메뉴 1')
-        settings_submenu2 = settings_menu.addAction('설정 서브메뉴 2')
+        settings_menu = self.menu_bar.addMenu('배치')
+        settings_submenu1 = settings_menu.addAction('사랑배치')
 
         meeting_menu = self.menu_bar.addMenu('모임')
         meeting_submenu1 = meeting_menu.addAction('마을 모임 보기')
@@ -51,6 +57,9 @@ class StudentListWindow(QMainWindow):
         grade_menu = self.menu_bar.addMenu('구분')
         grade_submenu1 = grade_menu.addAction('구분 부여')
         grade_submenu2 = grade_menu.addAction('구분 관리')
+
+        insta_menu = self.menu_bar.addMenu('인스타')
+        insta_submenu1 = insta_menu.addAction('게시물 생성')
 
         # Create a QSplitter to divide the window horizontally
         splitter = QSplitter(Qt.Horizontal)
@@ -79,7 +88,7 @@ class StudentListWindow(QMainWindow):
         check_layout.addWidget(self.gender_장결_include)
 
         self.gender_졸업_include = QCheckBox('졸업자 제외')
-        self.gender_졸업_include.setChecked(False)  # 기본 설정은 체크 해제 상태
+        self.gender_졸업_include.setChecked(True)  # 기본 설정은 체크 해제 상태
         self.gender_졸업_include.stateChanged.connect(self.toggle_absent_rows)
         check_layout.addWidget(self.gender_졸업_include)
 
@@ -92,7 +101,6 @@ class StudentListWindow(QMainWindow):
         right_layout.addLayout(check_layout)
 
         # Set up the right layout with the student table and buttons
-        self.students = self.util.select_all("마을원")
         self.header = ['uid'] + self.students[0][1:]
         self.student_table = StudentTableWidget(self.students, self.header, self.util)
         right_layout.addWidget(self.student_table)
@@ -135,10 +143,16 @@ class StudentListWindow(QMainWindow):
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
         grade_submenu1.triggered.connect(self.open_grade_set_window)
         grade_submenu2.triggered.connect(self.open_grade_manager_window)
+        insta_submenu1.triggered.connect(self.open_insta_window)
+        settings_submenu1.triggered.connect(self.open_assign_window)
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
-    def toggle_absent_rows(self, state):
-        """Toggle the visibility of rows where '장결' is marked."""
+        self.grade_manager_window = None  # 초기값을 None으로 설정합니다.
+        self.grade_set_window = None  # 초기값을 None으로 설정합니다.
+
+        self.toggle_absent_rows()
+
+    def toggle_absent_rows(self):
         exclude_absent = self.gender_장결_include.isChecked()
         exclude_graduated = self.gender_졸업_include.isChecked()
         count = self.student_table.hide_rows_with_absence(exclude_absent, exclude_graduated)
@@ -155,11 +169,28 @@ class StudentListWindow(QMainWindow):
 
     def open_grade_set_window(self):
         self.grade_set_window = GradeSet()
+        self.grade_set_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+        self.grade_set_window.update_signal.connect(self.toggle_absent_rows)
         self.grade_set_window.show()
 
     def open_grade_manager_window(self):
-        self.grade_manager_window = GradeManager()
-        self.grade_manager_window.show()
+        if self.grade_manager_window is None:
+            self.grade_manager_window = GradeManager()
+            self.grade_manager_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+            self.grade_manager_window.update_signal.connect(self.toggle_absent_rows)
+            self.grade_manager_window.show()
+        else:
+            self.grade_manager_window.show()
+            self.grade_manager_window.activateWindow()
+            self.grade_manager_window.raise_()
+
+    def open_insta_window(self):
+        self.insta_window = TextGeneratorApp()
+        self.insta_window.show()
+
+    def open_assign_window(self):
+        self.assign_window = TeamAllocator()
+        self.assign_window.show()
 
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()
@@ -176,8 +207,16 @@ class StudentListWindow(QMainWindow):
         self.reset_button.setEnabled(False)
 
     def save_changes(self):
+        # Get only the changed data
         changed_data = self.student_table.get_changed_data()
-        print("Changed Data:", changed_data)
+        if changed_data:
+            self.util.업데이트_마을원(changed_data)
+            self.student_table.refresh_data()
+            self.toggle_absent_rows()
+            QMessageBox.warning(self, "저장 성공", "변경사항이 저장되었습니다.")
+        else:
+            print("No changes detected.")
+
         self.save_button.setEnabled(False)
         self.reset_button.setEnabled(False)
 
