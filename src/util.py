@@ -123,8 +123,8 @@ class Util:
             , [('23년 3텀', '2023-10-15', '2023-12-31', '20'),
                ('24년 1텀', '2024-01-07', '2024-03-31', '20'),
                ('24년 2텀', '2024-04-07', '2024-12-31', '20')]
-            , [('L', '#cdb4db', '리더', False, False, 1), ('T', '#b0c4b1', '타지', False, True, 2), ('G', '#d6ccc2', '졸업', False, False, 3), ('J', '#f7e1d7', '장결', False, True, 4), ('S', '#ffc8dd', '새가족', False, True, 5),
-               ('A', '#e76f51', '출석구분', True, True, 6), ('B', '#f4a261', '출석구분', True, True, 7), ('C', '#e9c46a', '출석구분', True, True, 8), ('D', '#2a9d8f', '출석구분', True, True, 9), ('E', '#457b9d', '출석구분', True, True, 10), ]
+            , [('L', '#cdb4db', '리더', False, False, 1), ('T', '#b0c4b1', '타지생', False, True, 2), ('G', '#d6ccc2', '졸업자', False, False, 3), ('J', '#f7e1d7', '장결자', False, True, 4), ('S', '#ffc8dd', '새가족', False, True, 5),
+               ('A', '#e76f51', '일반사랑원', True, True, 6), ('B', '#f4a261', '일반사랑원', True, True, 7), ('C', '#e9c46a', '일반사랑원', True, True, 8), ('D', '#2a9d8f', '일반사랑원', True, True, 9), ('E', '#457b9d', '일반사랑원', True, True, 10), ]
         ]
         # 초기 데이터 삽입 쿼리
         insert_table_queries = [
@@ -1091,6 +1091,23 @@ WHERE 마을원.uid = ln.사랑원_uid;
             return None
 
         return True
+
+    def 배치구분분류조회(self):
+        try:
+            self.cursor.execute("""SELECT 설명
+                                    FROM 구분_코드
+                                    WHERE 사랑배치 = TRUE
+                                    GROUP BY 설명;""")
+        except Exception as e:
+            print(f"Error: {e}")
+            return None
+        res = self.cursor.fetchall()
+        columns = [desc[0] for desc in self.cursor.description]
+
+        # 헤더와 데이터를 포함한 결과 생성
+        result_with_header = [columns] + res
+
+        return result_with_header
 
     def truncate(self, table):
         # 마을원 테이블 조회

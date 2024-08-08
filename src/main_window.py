@@ -10,10 +10,12 @@ from PyQt5.QtWidgets import (
     QSplitter,
     QToolTip,
     QCheckBox,
-    QLabel
+    QLabel, QMessageBox
 )
 from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
+from matplotlib import pyplot as plt
+
 import util
 import 날짜유틸
 from meeting import AttendanceTable
@@ -23,8 +25,10 @@ from member_table_widget import StudentTableWidget
 from member_details_window import StudentDetailsWindow
 from grade_manager import GradeManager
 from grade_set import GradeSet
+from src.assign import TeamAllocator
 from src.insta_window import TextGeneratorApp
 
+plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 
 class StudentListWindow(QMainWindow):
     def __init__(self):
@@ -43,9 +47,8 @@ class StudentListWindow(QMainWindow):
         file_submenu1 = file_menu.addAction('파일 서브메뉴 1')
         file_submenu2 = file_menu.addAction('파일 서브메뉴 2')
 
-        settings_menu = self.menu_bar.addMenu('설정')
-        settings_submenu1 = settings_menu.addAction('설정 서브메뉴 1')
-        settings_submenu2 = settings_menu.addAction('설정 서브메뉴 2')
+        settings_menu = self.menu_bar.addMenu('배치')
+        settings_submenu1 = settings_menu.addAction('사랑배치')
 
         meeting_menu = self.menu_bar.addMenu('모임')
         meeting_submenu1 = meeting_menu.addAction('마을 모임 보기')
@@ -141,6 +144,7 @@ class StudentListWindow(QMainWindow):
         grade_submenu1.triggered.connect(self.open_grade_set_window)
         grade_submenu2.triggered.connect(self.open_grade_manager_window)
         insta_submenu1.triggered.connect(self.open_insta_window)
+        settings_submenu1.triggered.connect(self.open_assign_window)
         self.setWindowIcon(QIcon('../asset/icon/icon.ico'))
 
         self.grade_manager_window = None  # 초기값을 None으로 설정합니다.
@@ -184,6 +188,10 @@ class StudentListWindow(QMainWindow):
         self.insta_window = TextGeneratorApp()
         self.insta_window.show()
 
+    def open_assign_window(self):
+        self.assign_window = TeamAllocator()
+        self.assign_window.show()
+
     def handle_cell_click(self, row, column):
         column_name = self.student_table.horizontalHeaderItem(column).text()
         if column_name == "이름":
@@ -205,6 +213,7 @@ class StudentListWindow(QMainWindow):
             self.util.업데이트_마을원(changed_data)
             self.student_table.refresh_data()
             self.toggle_absent_rows()
+            QMessageBox.warning(self, "저장 성공", "변경사항이 저장되었습니다.")
         else:
             print("No changes detected.")
 

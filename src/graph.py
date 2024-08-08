@@ -13,7 +13,16 @@ plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 # plt.rcParams['font.family'] = 'NanumGothic'  # Linux 또는 macOS에서는 이 줄의 주석을 해제하고 사용하세요.
 
 plt.style.use('ggplot')  # 그래프 스타일 설정
-
+age_colors = {"91": "#d9ed92",
+                      "92": "#b5e48c",
+                      "93": "#99d98c",
+                      "94": "#76c893",
+                      "95": "#52b69a",
+                      "96": "#34a0a4",
+                      "97": "#168aad",
+                      "98": "#1a759f",
+                      "99": "#1e6091",
+                      "00": "#184e77"}
 
 class MplCanvas(FigureCanvas):
     """Matplotlib 캔버스를 위한 클래스"""
@@ -69,9 +78,11 @@ class GraphWindow(QWidget):
         res = res[1:]
         size = []
         label = []
+        color = []
         for r in res:
             label.append(r[0])
             size.append(r[1])
+            color.append(age_colors[r[0]])
 
         # 연령 파이 차트 생성
         self.age_pie = MplCanvas(self, width=2, height=2, dpi=100)
@@ -79,7 +90,8 @@ class GraphWindow(QWidget):
             self.age_pie.axes,
             sizes=size,  # 장결자 제외 기본 데이터
             labels=label,
-            title='또래 분포'
+            title='또래 분포',
+            colors=color
         )
         age_layout.addWidget(self.age_pie)
 
@@ -210,7 +222,6 @@ class GraphWindow(QWidget):
         canvas = axes.figure.canvas
         canvas.mpl_connect("motion_notify_event", hover)
 
-    import matplotlib.pyplot as plt
 
     def plot_line_chart(self, axes, period, meetings_data, sorted_dates):
         """선형 차트를 그리는 함수"""
@@ -338,14 +349,17 @@ class GraphWindow(QWidget):
         res = res[1:]
         size = []
         label = []
+        color = []
         for r in res:
             label.append(r[0])
             size.append(r[1])
+            color.append(age_colors[r[0]])
         self.plot_pie_chart(
             self.age_pie.axes,
             sizes=size,  # 장결자 제외 기본 데이터
             labels=label,
             title='또래 분포',
+            colors=color
         )
         self.age_pie.draw()
 
