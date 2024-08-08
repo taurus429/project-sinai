@@ -10,7 +10,6 @@ import util
 from datetime import datetime
 # 한글 문자를 지원하기 위해 폰트 설정
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
-# plt.rcParams['font.family'] = 'NanumGothic'  # Linux 또는 macOS에서는 이 줄의 주석을 해제하고 사용하세요.
 
 plt.style.use('ggplot')  # 그래프 스타일 설정
 age_colors = {"91": "#d9ed92",

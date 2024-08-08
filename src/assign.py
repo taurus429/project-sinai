@@ -5,11 +5,15 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QTimer, QMimeData
 from PyQt5.QtGui import QDrag, QPixmap
+from matplotlib import pyplot as plt
+
 from list_manager import ListManager  # Assuming this is a custom module
 from src import util
+from src.team_algorithm import assign_members
 from statistics_widget import StatisticsWidget  # Import the new StatisticsWidget
 import color as cUtil
 
+plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 구분리스트 = util.Util().구분코드조회()[1:]
 
 class DraggableLabel(QLabel):
@@ -75,6 +79,22 @@ class TeamWidget(QWidget):
         self.main_layout.addWidget(self.leader_label)
         self.main_layout.addLayout(self.middle_layout)
         self.main_layout.addLayout(self.bottom_layout)
+
+        # Add a list to keep track of checkboxes
+        self.checkboxes = []  # List to store references to the checkboxes
+
+        # Add checkboxes for grades A to E
+        사랑배치분류 = util.Util().배치구분분류조회()[1:]
+        사랑배치분류 = [item[0] for item in 사랑배치분류]
+
+        checkbox_layout = QVBoxLayout()
+        for grade in 사랑배치분류:
+            checkbox = QCheckBox(grade)
+            self.checkboxes.append(checkbox)  # Store reference to checkbox
+            checkbox_layout.addWidget(checkbox)
+
+        # Add the checkbox layout above the team label
+        self.team_layout.addLayout(checkbox_layout)
 
     def getIndex(self):
         return self.index
@@ -145,22 +165,11 @@ class TeamAllocator(QWidget):
         self.team_layouts = []
         team_area = QHBoxLayout()
         self.current_index = 0
-        사랑배치분류 = self.util.배치구분분류조회()[1:]
-        사랑배치분류 = [item[0] for item in 사랑배치분류]
 
 
         for i, 리더 in enumerate(리더리스트):
             # Use TeamWidget's new main_layout for organizing team and statistics
             team_widget = TeamWidget(i, self)
-
-            # Create checkboxes for grades A to E
-            checkbox_layout = QVBoxLayout()
-            for grade in 사랑배치분류:
-                checkbox = QCheckBox(grade)
-                checkbox_layout.addWidget(checkbox)
-
-            # Add the checkbox layout above the team label
-            team_widget.team_layout.addLayout(checkbox_layout)
 
             team_label = QLabel("     ", self)
             team_label.setAlignment(Qt.AlignCenter)
@@ -186,10 +195,10 @@ class TeamAllocator(QWidget):
         # Add the button and labels to the layout
         manage_button_layout.addWidget(manage_button)
         # Assign button
-        assign_button = QPushButton("Random 배치 시작", self)
-        assign_button.setFixedWidth(150)
-        manage_button_layout.addWidget(assign_button)
-        assign_button.clicked.connect(self.startAssignment)
+        self.assign_button = QPushButton("Random 배치 시작", self)  # Store a reference to this button
+        self.assign_button.setFixedWidth(150)
+        manage_button_layout.addWidget(self.assign_button)
+        self.assign_button.clicked.connect(self.startAssignment)
         manage_button_layout.setAlignment(Qt.AlignCenter)
         main_layout.addLayout(manage_button_layout)
 
@@ -204,7 +213,27 @@ class TeamAllocator(QWidget):
         self.list_manager_window.show()
 
     def startAssignment(self):
-        # Reset index and start timer
+        # Disable checkboxes and button after the first click
+        team_infos = []
+        마을원 = util.Util().마을원전체조회()[1:]
+        등급정보 = util.Util().구분코드조회()[1:]
+        for idx, team_widget in enumerate(self.team_layouts):
+            checkbox_state_dict = {}
+            for checkbox in team_widget.checkboxes:
+                for 등급 in 등급정보:
+                    if 등급[3] == checkbox.text():
+                        checkbox_state_dict[등급[1]] = checkbox.isChecked()
+                # Disable each checkbox
+                # checkbox.setDisabled(True)
+            리더 = [tup for tup in 마을원 if tup[3] == 'L'][idx]
+            리더튜플 = (리더[0], 리더[2], 리더[1], 리더[3], 리더[5])
+            team_infos.append([checkbox_state_dict, 리더튜플])
+
+        # Disable the "Random 배치 시작" button
+        # self.assign_button.setDisabled(True)
+
+        assign_result = assign_members(self.members, team_infos)
+        #TODO
         self.current_index = 0
         self.timer.start(500)
 
