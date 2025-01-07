@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, pyqtSlot
-import color as cUtil
+import src.color as cUtil
 
 class ComboBoxDelegate(QStyledItemDelegate):
     def __init__(self, items, parent=None):

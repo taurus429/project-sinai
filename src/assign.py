@@ -7,11 +7,11 @@ from PyQt5.QtCore import Qt, QPropertyAnimation, QRect, QTimer, QMimeData
 from PyQt5.QtGui import QDrag, QPixmap
 from matplotlib import pyplot as plt
 
-from list_manager import ListManager  # Assuming this is a custom module
+from src.list_manager import ListManager  # Assuming this is a custom module
 from src import util
 from src.team_algorithm import assign_members
-from statistics_widget import StatisticsWidget  # Import the new StatisticsWidget
-import color as cUtil
+from src.statistics_widget import StatisticsWidget  # Import the new StatisticsWidget
+import src.color as cUtil
 
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 구분리스트 = util.Util().구분코드조회()[1:]

@@ -6,8 +6,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QDate
 from PyQt5.QtGui import QFont, QFontDatabase, QIcon
-import util
-import setting as s
+from src import util
+from src import setting as s
 from datetime import datetime
 
 class CalendarPopup(QDialog):

@@ -5,7 +5,6 @@ import os
 
 from PyQt5.QtWidgets import QMessageBox
 
-import 날짜유틸
 from datetime import datetime, timedelta
 class Util:
     def __init__(self):

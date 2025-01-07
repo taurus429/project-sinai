@@ -6,7 +6,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-import util
+from src import util
 from datetime import datetime
 # 한글 문자를 지원하기 위해 폰트 설정
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows

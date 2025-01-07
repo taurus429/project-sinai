@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from PyQt5.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -16,17 +16,18 @@ from PyQt5.QtGui import QFontDatabase, QFont, QIcon
 from PyQt5.QtCore import Qt
 from matplotlib import pyplot as plt
 
-import util
-import 날짜유틸
-from meeting import AttendanceTable
-from setMeeting import MeetingApp
-from graph import GraphWindow  # Import the GraphWindow class
-from member_table_widget import StudentTableWidget
-from member_details_window import StudentDetailsWindow
-from grade_manager import GradeManager
-from grade_set import GradeSet
+import src.util as util
+import src.날짜유틸 as 날짜유틸
+from src.meeting import AttendanceTable
+from src.setMeeting import MeetingApp
+from src.graph import GraphWindow  # Import the GraphWindow class
+from src.member_table_widget import StudentTableWidget
+from src.member_details_window import StudentDetailsWindow
+from src.grade_manager import GradeManager
+from src.grade_set import GradeSet
 from src.assign import TeamAllocator
 from src.insta_window import TextGeneratorApp
+
 
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
 
@@ -239,13 +240,10 @@ class StudentListWindow(QMainWindow):
         details_window.show()
         self.details_windows.append(details_window)
 
-
 def main():
+
     app = QApplication(sys.argv)
 
-    # Load stylesheet from file
-    with open('styles.qss', 'r', encoding='utf-8') as f:
-        app.setStyleSheet(f.read())
     app.setWindowIcon(QIcon('../asset/icon/icon.ico'))
     font_path = '../asset/font/감탄로드바탕체 Regular.ttf'
     font_path = '../asset/font/감탄로드돋움체 Regular.ttf'

@@ -1,4 +1,4 @@
-import util
+import src.util as util
 import os
 u = util.Util()
 u.init()

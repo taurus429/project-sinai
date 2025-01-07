@@ -1,8 +1,8 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QDoubleSpinBox, QHBoxLayout, QFrame, QSizePolicy
 from PyQt5.QtCore import Qt
-import util
-import color as cUtil
+from src import util
+from src import color as cUtil
 
 class GradeCutoff(QWidget):
     def __init__(self):

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QApplication, QLi
     QCheckBox, QDialogButtonBox, QComboBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
-import util
+from src import util
 
 
 class AttendeesSelectionDialog(QDialog):

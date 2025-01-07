@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict, deque
-import util
+import src.util as util
 
 def assign_members(members, teams):
 

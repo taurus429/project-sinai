@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTableWidget, QT
     QAbstractItemView, QComboBox, QLabel, QHBoxLayout, QPushButton, QMessageBox, QSizePolicy
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QHeaderView
-import util
+from src import util
 from src.grade_cutoff import GradeCutoff
 
 

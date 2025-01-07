@@ -1,9 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QScrollBar, QAction, QMenu
 from PyQt5.QtCore import Qt
-import util
-from 날짜유틸 import format_datetime
-from addMeeting import AddMeetingWindow
+from src import util
+from src.날짜유틸 import format_datetime
+from src.addMeeting import AddMeetingWindow
 
 
 class AttendanceTable(QMainWindow):

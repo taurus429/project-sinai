@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QToolTip
 from PyQt5.QtGui import QPainter, QColor, QFontMetrics, QCursor
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from util import Util
+from src.util import Util
 class RoundedRectLabel(QWidget):
     def __init__(self, code, date):
         super().__init__()

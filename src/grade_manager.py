@@ -15,8 +15,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, pyqtSignal
-import util
-import color as cUtil
+from src import util
+from src import color as cUtil
 
 class GradeManager(QMainWindow):
     update_signal = pyqtSignal()

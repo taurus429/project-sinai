@@ -4,18 +4,30 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1cebf350-89aa-4ae0-890b-ede99dec8e73" name="Changes" comment="init: project skeleton">
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드감탄체.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드돋움체 Bold.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드돋움체 Regular.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드돋움체 Thin.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드바탕체 Bold.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드바탕체 Regular.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드바탕체 Thin.ttf" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/asset/font/감탄로드탄탄체.ttf" afterDir="false" />
+    <list default="true" id="1cebf350-89aa-4ae0-890b-ede99dec8e73" name="Changes" comment="feat: 배치 알고리즘 추가">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/project-sinai.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/project-sinai.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/addMeeting.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/addMeeting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assign.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assign.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/attendees_selection_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/attendees_selection_dialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/grade_cutoff.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/grade_cutoff.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/grade_manager.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/grade_manager.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/grade_set.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/grade_set.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/graph.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/graph.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/insta_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/insta_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/meeting.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/meeting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/member_details_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/member_details_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/member_table_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/member_table_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/namecard.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/namecard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/roundedRectLabel.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/roundedRectLabel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/setData.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/setData.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/setMeeting.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/setMeeting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/statistics_table_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/statistics_table_widget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/team_algorithm.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/team_algorithm.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/util.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/week_info_widget.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/week_info_widget.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,17 +44,22 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="develop" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 1
-}]]></component>
   <component name="ProjectId" id="2hnv3juUvjzFyMXxpdPiM3fxsCj" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <ConfirmationsSetting value="2" id="Add" />
@@ -51,23 +68,161 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Python.main.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "develop",
-    "last_opened_file_path": "C:/Users/85350/PycharmProjects/project-sinai/src/utils"
-  }
-}]]></component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../bethel_insta" />
+  </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\bull0\PycharmProjects\project-sinai\src" />
+      <recent name="C:\Users\bull0\PycharmProjects\project-sinai\data" />
       <recent name="C:\Users\85350\PycharmProjects\project-sinai\src\utils" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\bull0\PycharmProjects\project-sinai\data" />
+      <recent name="C:\Users\bull0\PycharmProjects\project-sinai\src" />
+      <recent name="C:\Users\bull0\PycharmProjects\project-sinai\data\사랑보고서" />
       <recent name="C:\Users\85350\PycharmProjects\project-sinai\asset\font" />
       <recent name="C:\Users\85350\PycharmProjects\project-sinai\asset" />
     </key>
+  </component>
+  <component name="RunManager" selected="Python.main_window">
+    <configuration name="assign" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="project-sinai" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/assign.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="insta_window" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="project-sinai" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\Users\bull0\PycharmProjects\project-sinai\src\insta_window.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main_window" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="project-sinai" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/main_window.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="roulette" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="project-sinai" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/roulette.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="setData" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="project-sinai" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/setData.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="team_algorithm" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="project-sinai" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/team_algorithm.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.main_window" />
+        <item itemvalue="Python.assign" />
+        <item itemvalue="Python.setData" />
+        <item itemvalue="Python.team_algorithm" />
+        <item itemvalue="Python.roulette" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -101,12 +256,87 @@
       <option name="project" value="LOCAL" />
       <updated>1718243971020</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="feat: 출석부 추출">
+      <created>1721224998483</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1721224998483</updated>
+    </task>
+    <task id="LOCAL-00004" summary="add: setMeeting.py">
+      <created>1721663793503</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1721663793503</updated>
+    </task>
+    <task id="LOCAL-00005" summary="feat: 참석 통계">
+      <created>1721751965974</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1721751965974</updated>
+    </task>
+    <task id="LOCAL-00006" summary="feat: 메달 추가">
+      <created>1721923582059</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1721923582059</updated>
+    </task>
+    <task id="LOCAL-00007" summary="feat: 구분 관리 추가">
+      <created>1722269003794</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1722269003794</updated>
+    </task>
+    <task id="LOCAL-00008" summary="feat: 인스타 연결, DB 관계정보 추가">
+      <created>1722356207103</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1722356207103</updated>
+    </task>
+    <task id="LOCAL-00009" summary="feat: 함류일 추가">
+      <created>1722990627196</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1722990627196</updated>
+    </task>
+    <task id="LOCAL-00010" summary="feat: 배치 알고리즘 추가">
+      <created>1723136754240</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1723136754240</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="first commit" />
     <MESSAGE value="init: project skeleton" />
-    <option name="LAST_COMMIT_MESSAGE" value="init: project skeleton" />
+    <MESSAGE value="feat: 출석부 추출" />
+    <MESSAGE value="add: setMeeting.py" />
+    <MESSAGE value="feat: 참석 통계" />
+    <MESSAGE value="feat: 메달 추가" />
+    <MESSAGE value="feat: 구분 관리 추가" />
+    <MESSAGE value="feat: 인스타 연결, DB 관계정보 추가" />
+    <MESSAGE value="feat: 함류일 추가" />
+    <MESSAGE value="feat: 배치 알고리즘 추가" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat: 배치 알고리즘 추가" />
   </component>
 </project>

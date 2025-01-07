@@ -1,5 +1,5 @@
 import sys
-import util
+import src.util as util
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QHeaderView, QApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor  # Import QColor for color manipulation
