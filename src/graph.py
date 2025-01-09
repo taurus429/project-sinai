@@ -46,6 +46,8 @@ class GraphWindow(QWidget):
 
         # 성별 분포 데이터 가져오기
         res = self.util.성별분포조회(False, False)
+        if res is None:
+            return
         res = res[1:]
         size = []
         label = []
@@ -224,6 +226,8 @@ class GraphWindow(QWidget):
 
     def plot_line_chart(self, axes, period, meetings_data, sorted_dates):
         """선형 차트를 그리는 함수"""
+        if len(sorted_dates) == 0:
+            return
         axes.clear()
 
         # 모든 모임의 실제 날짜를 수집

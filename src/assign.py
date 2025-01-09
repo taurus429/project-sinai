@@ -14,7 +14,10 @@ from src.statistics_widget import StatisticsWidget  # Import the new StatisticsW
 import src.color as cUtil
 
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
-구분리스트 = util.Util().구분코드조회()[1:]
+try:
+    구분리스트 = util.Util().구분코드조회()[1:]
+except TypeError:
+    구분리스트 = []  # 기본값 설정 또는 다른 처리
 
 class DraggableLabel(QLabel):
     def __init__(self, member_tuple, parent=None):

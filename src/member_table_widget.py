@@ -37,7 +37,10 @@ class StudentTableWidget(QTableWidget):
         super().__init__()
         self.util = util
         self.students = students
-        self.구분데이터 = self.util.구분코드조회()[1:]
+        try:
+            self.구분데이터 = self.util.구분코드조회()[1:]
+        except TypeError:
+            self.구분데이터 = []
         self.구분색사전 = dict()
         for 구분 in self.구분데이터:
             self.구분색사전[구분[1]] = 구분[2]

@@ -18,7 +18,12 @@ age_colors = {"91": "#d9ed92",
                       "99": "#1e6091",
                       "00": "#184e77"}
 grade_colors = dict()
-구분데이터 = util.Util().구분코드조회()[1:]
+구분데이터 = []
+try:
+    구분데이터 = util.Util().구분코드조회()[1:]
+except TypeError:
+    구분데이터 = []  # 기본값 설정 또는 다른 처리
+
 for g in 구분데이터:
     grade_colors[g[1]] = g[2]
 

@@ -271,7 +271,7 @@ class Util:
             return True
 
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"마을원저장 Error: {e}")
             return False
 
     def 모임저장(self, file_path):

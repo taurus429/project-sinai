@@ -27,6 +27,7 @@ from src.grade_manager import GradeManager
 from src.grade_set import GradeSet
 from src.assign import TeamAllocator
 from src.insta_window import TextGeneratorApp
+from src.regist_member_window import MemberRegistration
 
 
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
@@ -35,7 +36,7 @@ class StudentListWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.util = util.Util()
-        self.setWindowTitle("마을원 명단")
+        self.setWindowTitle("벧엘 마을 관리")
         self.setGeometry(100, 100, 1200, 700)  # Increase width and height
 
         self.central_widget = QWidget()
@@ -45,8 +46,9 @@ class StudentListWindow(QMainWindow):
         self.setMenuBar(self.menu_bar)
 
         file_menu = self.menu_bar.addMenu('파일')
-        file_submenu1 = file_menu.addAction('파일 서브메뉴 1')
-        file_submenu2 = file_menu.addAction('파일 서브메뉴 2')
+        file_submenu1 = file_menu.addAction('마을원 등록')
+        file_submenu2 = file_menu.addAction('사랑보고서 등록')
+        file_submenu3 = file_menu.addAction('모임출석 등록')
 
         settings_menu = self.menu_bar.addMenu('배치')
         settings_submenu1 = settings_menu.addAction('사랑배치')
@@ -96,12 +98,17 @@ class StudentListWindow(QMainWindow):
         self.students = self.util.select_all("마을원")
         count_layout = QHBoxLayout()
         count_layout.setAlignment(Qt.AlignRight)
-        self.count_label = QLabel(f'총 {len(self.students[1:])}명')
+        print(self.students)
+        student_count = 0
+        if self.students is not None:
+            student_count = len(self.students[1:])
+        self.count_label = QLabel(f'총 {student_count}명')
         count_layout.addWidget(self.count_label)
         check_layout.addLayout(count_layout)
         right_layout.addLayout(check_layout)
+        if self.students is None:
+            return
 
-        # Set up the right layout with the student table and buttons
         self.header = ['uid'] + self.students[0][1:]
         self.student_table = StudentTableWidget(self.students, self.header, self.util)
         right_layout.addWidget(self.student_table)
@@ -140,6 +147,7 @@ class StudentListWindow(QMainWindow):
         self.details_windows = []
 
         # Connect file_submenu1 and file_submenu2 to actions
+        file_submenu1.triggered.connect(self.open_regist_member_window)
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
         grade_submenu1.triggered.connect(self.open_grade_set_window)
@@ -159,6 +167,10 @@ class StudentListWindow(QMainWindow):
         count = self.student_table.hide_rows_with_absence(exclude_absent, exclude_graduated)
         self.graph_window.update_pies(exclude_absent, exclude_graduated)
         self.count_label.setText(f'총 {count}명')
+
+    def open_regist_member_window(self):
+        self.regist_member_window = MemberRegistration()
+        self.regist_member_window.show()
 
     def open_add_meeting_window(self):
         self.add_meeting_window = AttendanceTable()
