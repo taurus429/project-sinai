@@ -24,7 +24,7 @@ from src.graph import GraphWindow  # Import the GraphWindow class
 from src.member_table_widget import StudentTableWidget
 from src.member_details_window import StudentDetailsWindow
 from src.grade_manager import GradeManager
-from src.grade_set import GradeSet
+from src.grade_set_window import GradeSet
 from src.assign import TeamAllocator
 from src.insta_window import TextGeneratorApp
 from src.regist_member_window import MemberRegistration
@@ -170,6 +170,8 @@ class StudentListWindow(QMainWindow):
 
     def open_regist_member_window(self):
         self.regist_member_window = MemberRegistration()
+        self.regist_member_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+        self.regist_member_window.update_signal.connect(self.toggle_absent_rows)
         self.regist_member_window.show()
 
     def open_add_meeting_window(self):
@@ -253,7 +255,11 @@ class StudentListWindow(QMainWindow):
         self.details_windows.append(details_window)
 
 def main():
-
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, 'db.sqlite3')
+    u = util.Util()
+    u.first_init_if_need(db_path=file_path)
+    u.__del__()
     app = QApplication(sys.argv)
 
     app.setWindowIcon(QIcon('../asset/icon/icon.ico'))
@@ -265,6 +271,8 @@ def main():
     custom_font = QFont(font_family, 10)
     QToolTip.setFont(custom_font)
     app.setFont(custom_font)
+
+
 
     window = StudentListWindow()
     window.show()

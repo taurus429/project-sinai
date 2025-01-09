@@ -150,14 +150,46 @@ class Util:
         for i in range(len(init_data)):
             self.cursor.executemany(insert_table_queries[i], init_data[i])
 
+    def is_database_empty(self, db_path):
+        if not os.path.isfile(db_path):  # 파일이 존재하지 않으면 당연히 초기화 필요
+            return True
+
+        try:
+            # sqlite_master 테이블에서 테이블 개수 조회
+            self.cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table';")
+            table_count = self.cursor.fetchone()[0]
+
+            return table_count == 0  # 테이블이 하나도 없으면 True 반환
+
+        except sqlite3.Error as e:
+            print(f"데이터베이스 확인 중 오류 발생: {e}")
+            return True  # 오류가 발생하면 안전하게 초기화하도록 처리
+
+    def first_init_if_need(self, db_path):
+        if self.is_database_empty(db_path):
+            self.init()
+            print("db가 초기화 되었습니다.")
 
     def 출석파일저장(self, file_paths):
         time = [(0, 12), (0, 15), (0, 17), (-2, 21)]
         code2desc, desc2code = self.모임코드조회()
         for file_path in file_paths:
+
             if file_path:
+                print(file_path)
                 if file_path.lower().endswith(('.xls', '.xlsx')):
-                    df = pd.read_excel(file_path, header=None)
+                    try:
+                        # 엑셀 파일 읽기
+                        df = pd.read_excel(file_path, header=None)
+                        print("엑셀 파일이 성공적으로 읽혔습니다.")
+                    except FileNotFoundError:
+                        print(f"파일이 존재하지 않습니다: {file_path}")
+                    except pd.errors.EmptyDataError:
+                        print(f"파일이 비어 있습니다: {file_path}")
+                    except pd.errors.ParserError:
+                        print(f"파일 파싱 중 오류가 발생했습니다: {file_path}")
+                    except Exception as e:
+                        print(f"예상치 못한 오류가 발생했습니다: {e}")
                 else:
                     raise ValueError("Unsupported file type")
 
@@ -177,7 +209,6 @@ class Util:
                 for col in range(3, df.shape[1]):
                     if df.iloc[3, col] == "지난 금철":
                         df.iloc[3, col] = "금철"
-
                 # 사랑원 데이터 추출
                 people_list = []
                 for row in range(4, df.shape[0]):
@@ -219,6 +250,10 @@ class Util:
                             모임날짜 = df.iloc[2, col]
                             모임구분 = desc2code[df.iloc[3, col]][0]
                             참석여부 = df.iloc[person[0] + 3, col]
+                            if pd.isna(참석여부):
+                                참석여부 = 0
+                            if 참석여부 == 'X':
+                                continue
                             self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
                             result = self.cursor.fetchone()
                             모임_uid = result[0]
@@ -234,7 +269,6 @@ class Util:
                                 self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
                                                     (마을원_uid, 모임_uid, 참석여부))
                                 # print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
-
                         # 사랑 소속 데이터
                         if col % 4 == 3 and not pd.isna(df.iloc[person[0] + 3, col]):
                             날짜 = df.iloc[2, col].split()[0]
@@ -253,26 +287,154 @@ class Util:
 
         return True
 
-    def 마을원저장(self, file_path):
-        try:
-            if file_path.lower().endswith(('.xls', '.xlsx')):
-                df = pd.read_excel(file_path, header=None)
-            else:
-                raise ValueError("Unsupported file type")
+    def 새가족파일저장(self, file_paths):
+        time = [(0, 12), (0, 15), (0, 17), (-2, 21)]
+        code2desc, desc2code = self.모임코드조회()
+        for file_path in file_paths:
 
+            if file_path:
+                if file_path.lower().endswith(('.xls', '.xlsx')):
+                    try:
+                        # 엑셀 파일 읽기
+                        df = pd.read_excel(file_path, header=None)
+                        print("엑셀 파일이 성공적으로 읽혔습니다.")
+                    except FileNotFoundError:
+                        print(f"파일이 존재하지 않습니다: {file_path}")
+                    except pd.errors.EmptyDataError:
+                        print(f"파일이 비어 있습니다: {file_path}")
+                    except pd.errors.ParserError:
+                        print(f"파일 파싱 중 오류가 발생했습니다: {file_path}")
+                    except Exception as e:
+                        print(f"예상치 못한 오류가 발생했습니다: {e}")
+                else:
+                    raise ValueError("Unsupported file type")
+
+                year = int(df.iloc[0, 0].split()[0][:4])
+
+                # 날짜 형식 맞춰서 열마다 달아주기
+                for row in range(2, df.shape[0], 15):
+                    if not pd.isna(df.iloc[row, 0]):
+                        month = int(df.iloc[row, 0].split()[1][0:-1])
+                        day = int(df.iloc[row, 0].split()[2][0:-1])
+                        date = datetime(year, month, day)
+                        for i in range(4):
+                            time_date = date + timedelta(days=time[i][0], hours=time[i][1])
+                            full_date = time_date.strftime('%Y-%m-%d %H:%M:%S')
+                            df.iloc[row+1, 4 + i] = full_date
+                    # 지난 금철 => 금철로 바꾸기
+                    if df.iloc[row+2, 7] == "지난 금철":
+                        df.iloc[row+2, 7] = "금철"
+                    # 사랑\n모임 => 사랑모임으로 바꾸기
+                    if df.iloc[row+2, 5] == "사랑\n모임":
+                        df.iloc[row+2, 5] = "사랑모임"
+                    # 사랑원 데이터 추출
+                    people_list = []
+                    for i in range(10):
+                        if pd.isna(df.iloc[row+3+i, 1]):
+                            break
+                        people_list.append((df.iloc[row+3+i, 0], df.iloc[row+3+i, 1], df.iloc[row+3+i, 2]))
+                    # 모임 데이터 입력
+                    for i in range(4):
+                        모임날짜 = df.iloc[row+1, 4+i]
+                        모임구분 = desc2code[str(df.iloc[row+2, 4+i]).strip()][0]
+                        print(f"모임 추가: {모임구분}, {모임날짜}")
+                        self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
+                        result = self.cursor.fetchone()
+                        if result is None:
+                            self.cursor.execute("INSERT INTO 모임 (모임_코드, 날짜) VALUES (?, ?)", (모임구분, 모임날짜))
+
+                    # 사랑장
+                    사랑장 = df.iloc[1, df.shape[1] - 1].split()[1]
+                    사랑장_생년월일 = None
+                    for person in people_list:
+                        if person[1] == 사랑장:
+                            사랑장_생년월일 = person[2]
+                            break
+                    self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (사랑장, 사랑장_생년월일))
+                    result = self.cursor.fetchone()
+                    사랑장_uid = result[0]
+                    # 마을원 데이터
+                    for person in people_list:
+                        이름 = person[1]
+                        생년월일 = person[2]
+                        self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (이름, 생년월일))
+                        result = self.cursor.fetchone()
+                        마을원_uid = result[0]
+                        for c in range(4):
+                            모임날짜 = df.iloc[row+1, 4+c]
+                            모임구분 = desc2code[str(df.iloc[row+2, 4+c]).strip()][0]
+                            참석여부 = df.iloc[person[0] + row + 2, 4+c]
+                            if pd.isna(참석여부):
+                                참석여부 = 0
+                            self.cursor.execute("SELECT uid FROM 모임 WHERE 모임_코드=? AND 날짜=?", (모임구분, 모임날짜))
+                            result = self.cursor.fetchone()
+                            모임_uid = result[0]
+
+                            self.cursor.execute("SELECT 참석여부 FROM 참석 WHERE 마을원_uid=? AND 모임_uid=?",
+                                                (마을원_uid, 모임_uid))
+                            result = self.cursor.fetchone()
+                            if result:  # 업데이트
+                                self.cursor.execute("UPDATE 참석 SET 참석여부=? WHERE 마을원_uid=? AND 모임_uid=?",
+                                                    (참석여부, 마을원_uid, 모임_uid))
+                                # print(f"참석 수정: {마을원_uid}, {모임_uid}, {참석여부}")
+                            else:  # 인서트
+                                self.cursor.execute("INSERT INTO 참석 (마을원_uid, 모임_uid, 참석여부) VALUES (?, ?, ?)",
+                                                    (마을원_uid, 모임_uid, 참석여부))
+                                # print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
+                        # 사랑 소속 데이터
+                        날짜 = df.iloc[row+1, 4].split()[0]
+                        self.cursor.execute("SELECT uid FROM 사랑_소속 WHERE 사랑장_uid=? AND 사랑원_uid=? AND 날짜=?",
+                                            (사랑장_uid, 마을원_uid, 날짜))
+                        사랑소속_uid = self.cursor.fetchone()
+                        if result:  # 업데이트
+                            self.cursor.execute("UPDATE 사랑_소속 SET 사랑장_uid=?, 사랑원_uid=?, 날짜=? WHERE uid=?",
+                                                (사랑장_uid, 마을원_uid, 날짜, 사랑소속_uid[0]))
+                        else:  # 인서트
+                            self.cursor.execute("INSERT INTO 사랑_소속 (사랑장_uid, 사랑원_uid, 날짜) VALUES (?, ?, ?)",
+                                                (사랑장_uid, 마을원_uid, 날짜))
+
+            self.업데이트_마을합류일()
+            print(f"{file_path} 저장 성공")
+
+        return True
+
+    def 마을원저장(self, df):
+        try:
             for index, row in df.iterrows():
-                이름, 또래, 생년월일, 전화번호, 성별 = row[0].split()[1], str(row[1])[:2], row[1], row[2], row[3]
+                if pd.isna(row.iloc[0])or pd.isna(row.iloc[1])or pd.isna(row.iloc[2]) or pd.isna(row.iloc[3]):
+                    continue  # pass 대신 continue 사용
+
+                # 이름 추출
+                이름_전체 = row.iloc[0]
+                이름 = 이름_전체.split()[1] if len(이름_전체.split()) > 1 else 이름_전체  # 방어적 코딩 추가
+
+                # 나머지 데이터 추출
+                또래 = str(row.iloc[1])[:2]
+                생년월일 = row.iloc[1]
+                전화번호 = row.iloc[2]
+                성별 = row.iloc[3]
+
+                # DB 조회 및 삽입
                 self.cursor.execute("SELECT uid FROM 마을원 WHERE 이름=? AND 생년월일=?", (이름, 생년월일))
                 result = self.cursor.fetchone()
+
                 if result is None:
-                    self.cursor.execute("INSERT INTO 마을원 (이름, 또래, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?, ?)",
-                                        (이름, 또래, 생년월일, 성별, 전화번호))
-                    # print(f"마을원 추가: {이름}, {생년월일}, {성별}, {전화번호}")
+                    self.cursor.execute(
+                        "INSERT INTO 마을원 (이름, 또래, 생년월일, 성별, 전화번호) VALUES (?, ?, ?, ?, ?)",
+                        (이름, 또래, 생년월일, 성별, 전화번호)
+                    )
+
+            self.conn.commit()
+
             return True
 
         except Exception as e:
             print(f"마을원저장 Error: {e}")
             return False
+
+        finally:
+            self.cursor.close()
+            self.conn.close()
 
     def 모임저장(self, file_path):
         try:

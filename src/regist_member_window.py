@@ -2,10 +2,11 @@ import sys
 import pandas as pd
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QVBoxLayout, QFileDialog, QMessageBox
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
-
+from PyQt5.QtCore import Qt, pyqtSignal
+from src.util import Util
 
 class MemberRegistration(QWidget):
+    update_signal = pyqtSignal()
     def __init__(self):
         super().__init__()
 
@@ -41,40 +42,32 @@ class MemberRegistration(QWidget):
 
     def process_excel(self, file_path):
         try:
-            # 엑셀 파일의 모든 시트 읽기
             sheets = pd.read_excel(file_path, sheet_name=None)
 
-            # 기본 컬럼 이름 패턴
             base_columns = ['Name', 'Birthday', 'Phone', 'Gender']
-
-            # 모든 시트의 데이터를 저장할 리스트
             all_persons = []
+            # 시트 이름을 오름차순으로 정렬
+            sorted_sheet_names = sorted(sheets.keys())
 
-            # 각 시트에 대해 데이터 처리
-            for sheet_name, df in sheets.items():
+            # 정렬된 시트 이름을 사용하여 순회
+            for sheet_name in sorted_sheet_names:
+                df = sheets[sheet_name]  # 정렬된 순서대로 데이터 가져오기
                 print(f"Processing sheet: {sheet_name}")
 
-                # 필요하지 않은 행 제거 및 인덱스 재설정
                 df_cleaned = df.dropna(how='all').reset_index(drop=True)
-
-                # 데이터 프레임의 실제 컬럼 수 확인
                 num_columns = len(df_cleaned.columns)
                 print(f"Columns in dataframe: {num_columns}")
 
-                # 4의 배수인 경우 오른쪽에 빈 컬럼 추가
                 if num_columns % 4 == 0:
                     df_cleaned['Empty'] = None
                     num_columns += 1
 
-                # 컬럼 이름 생성
                 columns = ['Index']
                 for i in range(1, (num_columns - 1) // 4 + 1):
                     columns += [f'{col}{i}' for col in base_columns]
 
-                # 컬럼 이름 재설정
                 df_cleaned.columns = columns
 
-                # 인적 정보 추출
                 persons = []
                 for _, row in df_cleaned.iterrows():
                     for i in range(1, (num_columns - 1) // 4 + 1):
@@ -92,26 +85,23 @@ class MemberRegistration(QWidget):
 
                 all_persons.extend(persons)
 
-            # 인적 정보 데이터프레임 생성
             person_info_df = pd.DataFrame(all_persons)
 
-            # 엑셀 파일로 저장 (헤더 없이)
-            output_file_path = '인적정보_출석부_처리됨.xlsx'  # 로컬 파일 경로로 수정하세요
-            person_info_df.to_excel(output_file_path, index=False, header=False)
-
-            print(f"엑셀 파일이 성공적으로 저장되었습니다: {output_file_path}")
-
-            # 성공 메시지 창 표시
-            app = QApplication(sys.argv)
-            QMessageBox.information(None, "완료", "엑셀 파일이 성공적으로 저장되었습니다.")
+            u = Util()
+            u.마을원저장(df=person_info_df)
+            self.update_done()
+            QMessageBox.information(self, "완료", "엑셀 파일이 성공적으로 저장되었습니다.")
 
         except Exception as e:
-            print(f"오류 발생: {e}")
 
-            # 오류 메시지 창 표시
-            app = QApplication(sys.argv)
-            QMessageBox.critical(None, "오류", f"파일 처리 중 오류가 발생했습니다: {e}")
+            QMessageBox.critical(self, "오류", f"파일 처리 중 오류가 발생했습니다: {e}")
 
+    def update_done(self):
+        # ... update_done 기능 ...
+        print("Update done is called.")
+
+        # 필요한 작업 수행 후 신호 방출
+        self.update_signal.emit()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
