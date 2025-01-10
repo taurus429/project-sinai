@@ -119,9 +119,11 @@ class Util:
         init_data = [
             [('자체예배', '#ff595e', '#ffffff'), ('더원', '#ff595e', '#ffffff'), ('사랑모임', '#f79824', '#ffffff'), ('소울기도회', '#008148', '#ffffff'), ('금철', '#1982c4', '#ffffff'), ('대예배', '#6a4c93', '#ffffff'), ('주와나', '#ffb5a7', '#ffffff'), ('벧엘의밤', '#000000', '#ffffff'),
              ('아웃팅', '#00a896', '#ffffff'), ('리트릿', '#e9589e', '#ffffff'), ('큐티모임', '#27187e', '#ffffff'), ('선교모임', '#656d4a', '#ffffff'), ('아웃리치', '#000000', '#ffffff'), ('또래모임', '#b37dff', '#ffffff'), ('수련회', '#3e71ff', '#ffffff')]
-            , [('23년 3텀', '2023-10-15', '2023-12-31', '20'),
-               ('24년 1텀', '2024-01-07', '2024-03-31', '20'),
-               ('24년 2텀', '2024-04-07', '2024-12-31', '20')]
+            , [('23년 3텀', '2023-10-15', '2024-01-04', '20'),
+               ('24년 1텀', '2024-01-05', '2024-04-04', '20'),
+               ('24년 2텀', '2024-04-05', '2024-08-29', '20'),
+               ('24년 3텀', '2024-08-30', '2025-01-30', '20'),
+               ('25년 1텀', '2025-01-31', '2025-05-05', '20')]
             , [('L', '#cdb4db', '리더', False, False, 1), ('T', '#b0c4b1', '타지생', False, True, 2), ('G', '#d6ccc2', '졸업자', False, False, 3), ('J', '#f7e1d7', '장결자', False, True, 4), ('S', '#ffc8dd', '새가족', False, True, 5),
                ('A', '#e76f51', '일반사랑원', True, True, 6), ('B', '#f4a261', '일반사랑원', True, True, 7), ('C', '#e9c46a', '일반사랑원', True, True, 8), ('D', '#2a9d8f', '일반사랑원', True, True, 9), ('E', '#457b9d', '일반사랑원', True, True, 10), ]
         ]
@@ -270,12 +272,12 @@ class Util:
                                                     (마을원_uid, 모임_uid, 참석여부))
                                 # print(f"참석 추가: {마을원_uid}, {모임_uid}, {참석여부}
                         # 사랑 소속 데이터
-                        if col % 4 == 3 and not pd.isna(df.iloc[person[0] + 3, col]):
+                        if col % 4 == 3 and not pd.isna(df.iloc[2, col]):
                             날짜 = df.iloc[2, col].split()[0]
                             self.cursor.execute("SELECT uid FROM 사랑_소속 WHERE 사랑장_uid=? AND 사랑원_uid=? AND 날짜=?",
                                                 (사랑장_uid, 마을원_uid, 날짜))
                             사랑소속_uid = self.cursor.fetchone()
-                            if result:  # 업데이트
+                            if 사랑소속_uid is not None:  # 업데이트
                                 self.cursor.execute("UPDATE 사랑_소속 SET 사랑장_uid=?, 사랑원_uid=?, 날짜=? WHERE uid=?",
                                                     (사랑장_uid, 마을원_uid, 날짜, 사랑소속_uid[0]))
                             else:  # 인서트

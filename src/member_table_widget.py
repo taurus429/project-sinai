@@ -107,6 +107,44 @@ class StudentTableWidget(QTableWidget):
 
         # 데이터가 변경될 때 색깔 업데이트
         self.model().dataChanged.connect(self.update_cell_color)
+        self.model().dataChanged.connect(self.handle_data_change)
+
+    def handle_data_change(self, topLeft, bottomRight, roles):
+        """ '구분' 컬럼 값이 'G'이면 '졸업' ✅, 아니면 ❌
+            '구분' 컬럼 값이 'J'이면 '장결' ✅, 아니면 ❌
+        """
+        if not (roles and Qt.EditRole in roles):
+            return
+
+        row = topLeft.row()
+        col = topLeft.column()
+
+        if self.header[col] == "구분":
+            value = self.item(row, col).text()
+
+            # "졸업" 컬럼 처리
+            if "졸업" in self.header:
+                graduation_col = self.header.index("졸업")
+                graduation_value = "✅" if value == "G" else "❌"
+                self.set_centered_item(row, graduation_col, graduation_value)
+
+            # "장결" 컬럼 처리
+            if "장결" in self.header:
+                absence_col = self.header.index("장결")
+                absence_value = "✅" if value == "J" else "❌"
+                self.set_centered_item(row, absence_col, absence_value)
+
+            # "리더" 컬럼 처리
+            if "리더" in self.header:
+                leader_col = self.header.index("리더")
+                leader_value = "✅" if value == "L" else "❌"
+                self.set_centered_item(row, leader_col, leader_value)
+
+    def set_centered_item(self, row, col, text):
+        """ 특정 셀에 값을 설정하고 가운데 정렬 적용 """
+        item = QTableWidgetItem(text)
+        item.setTextAlignment(Qt.AlignCenter)  # 가운데 정렬 적용
+        self.setItem(row, col, item)
 
     def populate_table(self):
         # 테이블에 데이터를 채웁니다.

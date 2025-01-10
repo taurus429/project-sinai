@@ -25,9 +25,10 @@ from src.member_table_widget import StudentTableWidget
 from src.member_details_window import StudentDetailsWindow
 from src.grade_manager import GradeManager
 from src.grade_set_window import GradeSet
-from src.assign import TeamAllocator
+from src.assign_window import TeamAllocator
 from src.insta_window import TextGeneratorApp
 from src.regist_member_window import MemberRegistration
+from src.regist_sarang_window import SarangRegist
 
 
 plt.rcParams['font.family'] = 'Malgun Gothic'  # Windows
@@ -148,6 +149,7 @@ class StudentListWindow(QMainWindow):
 
         # Connect file_submenu1 and file_submenu2 to actions
         file_submenu1.triggered.connect(self.open_regist_member_window)
+        file_submenu2.triggered.connect(self.open_regist_sarang_window)
         meeting_submenu1.triggered.connect(self.open_add_meeting_window)
         meeting_submenu2.triggered.connect(self.open_set_meeting_window)
         grade_submenu1.triggered.connect(self.open_grade_set_window)
@@ -173,6 +175,12 @@ class StudentListWindow(QMainWindow):
         self.regist_member_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
         self.regist_member_window.update_signal.connect(self.toggle_absent_rows)
         self.regist_member_window.show()
+
+    def open_regist_sarang_window(self):
+        self.regist_sarang_window = SarangRegist()
+        self.regist_sarang_window.update_signal.connect(self.student_table.refresh_data)  # 신호 연결
+        self.regist_sarang_window.update_signal.connect(self.toggle_absent_rows)
+        self.regist_sarang_window.show()
 
     def open_add_meeting_window(self):
         self.add_meeting_window = AttendanceTable()
