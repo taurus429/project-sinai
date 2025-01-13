@@ -22,7 +22,7 @@ def get_contrast_color(hex_color):
     contrast_black = (luminance + 0.05) / 0.05
 
     # 대비 비율에 따라 적절한 텍스트 색상을 선택
-    if contrast_white > contrast_black:
+    if contrast_white *2.2> contrast_black:
         return "#FFFFFF"  # 흰색
     else:
         return "#000000"  # 검은색

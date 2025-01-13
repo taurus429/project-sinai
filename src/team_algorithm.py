@@ -1,3 +1,4 @@
+import copy
 import random
 from collections import defaultdict, deque
 import src.util as util
@@ -21,23 +22,6 @@ def assign_members(members, teams):
     # 팀의 리더를 UID로 멤버 튜플을 찾기 위한 딕셔너리
     leader_lookup = {leader[0]: leader for _, leader in teams}
 
-    # 제약사항 처리
-    must_together = defaultdict(set)  # '동반'해야 하는 멤버 정보
-    must_separate = defaultdict(set)  # '분리'해야 하는 멤버 정보
-
-    for member1_uid, member2_uid, condition in constraints:
-        # UID로 멤버 튜플 찾기
-        member1 = member_lookup.get(member1_uid, leader_lookup.get(member1_uid))
-        member2 = member_lookup.get(member2_uid, leader_lookup.get(member2_uid))
-
-        if member1 and member2:
-            if condition == '동반':
-                must_together[member1].add(member2)
-                must_together[member2].add(member1)
-            elif condition == '분리':
-                must_separate[member1].add(member2)
-                must_separate[member2].add(member1)
-
     # Step 2: 팀장 먼저 배정
     for idx, team in enumerate(teams):
         _, leader = team  # 팀장 정보 추출
@@ -45,85 +29,103 @@ def assign_members(members, teams):
         leader_tuple = leader_lookup[leader_uid]  # 팀장의 멤버 튜플 추출
         team_dict[leader].append(leader_tuple)  # 팀장 배정
 
+    best_assignment = None
+    min_violations = float('inf')  # 제약 사항 위반의 최소값 (초기값은 무한대로 설정)
+    iteration_count = 0
+
+    while iteration_count < 10000:
+        print(f"\n# 배정 시도 {iteration_count + 1}")
+
+        # 팀 배정 시도
+        current_member_dict = copy.deepcopy(member_dict)
+        current_team_dict = {team: list(members) for team, members in team_dict.items()}
+        assign_members_to_teams(current_member_dict, grade_dict, current_team_dict, constraints)
+
+        # 제약 사항 위반 개수 확인
+        violations = check_constraints(current_team_dict, constraints)
+
+        # 제약 사항 위반 건수가 0건이면 바로 리턴
+        if violations == 0:
+            print(f"🎉 제약 사항 위반 0건으로 배정 완료!")
+            return current_team_dict
+
+        # 최소 제약 사항 위반 건수 기록
+        if violations < min_violations:
+            min_violations = violations
+            best_assignment = current_team_dict
+
+        iteration_count += 1
+
+    # 1000번 반복 후 최소 제약 사항 위반 결과 리턴
+    print(f"\n💥 10,000번 배정 후 최소 제약 사항 위반 결과 반환")
+    return best_assignment
+
+
+def assign_members_to_teams(member_dict, grade_dict, team_dict, constraints):
     # Step 3: 등급별로 멤버를 팀에 배정
-    for grade, members_list in member_dict.items():
-        # 현재 등급을 받을 수 있는 팀 목록 찾기
-        valid_teams = [team for team, grades in grade_dict.items() if grades[grade]]
+    for grade, members_list in sorted(member_dict.items()):  # 1. grade 오름차순 순회
+        valid_teams = [team for team, grades in grade_dict.items() if grades.get(grade, False)]
 
-        # 멤버들을 랜덤하게 섞어 배정 순서를 무작위로 만듦
-        random.shuffle(members_list)
+        # 배정 가능한 팀이 없는 경우 스킵
+        if not valid_teams:
+            #print(f"\n⚠️ [Grade {grade}] 배정 가능한 팀 없음! (스킵)")
+            continue
 
-        # 동반 배정이 필요한 멤버들을 우선 처리하기 위해 큐 사용
-        queue = deque(members_list)
+        team_names = [team[1] for team in valid_teams]  # valid_teams의 2번째 원소(팀 이름) 리스트 추출
+        random.shuffle(members_list)  # 팀원 랜덤 섞기
 
-        while queue:
-            member = queue.popleft()
-            uid = member[0]
-            # 멤버를 배정할 수 있는 유효한 팀을 찾았는지 여부
-            valid_team_found = False
+        # 2. 현재 valid_teams의 팀원 수 가져오기
+        team_sizes = {team: len(team_dict[team]) for team in valid_teams}
 
-            # 팀의 현재 배정된 멤버 수를 기준으로 정렬하여 배정
-            for team in sorted(valid_teams, key=lambda x: len(team_dict[x])):
-                # 제약사항을 만족하는지 확인
-                can_assign = True
+        #print(f"\n🟢 [Grade {grade}] 배정 시작")
+        #print(f"🔹 배정 가능 팀: {valid_teams} (팀 이름: {team_names})")
+        #print(f"🔹 초기 팀원 수: {team_sizes}")
+        #print(f"🔹 배정할 인원: {members_list}")
 
-                # '동반' 제약사항 확인
-                if member in must_together:
-                    # 동반해야 하는 멤버가 이미 배정된 팀에 있는지 확인
-                    for together_member in must_together[member]:
-                        if together_member not in team_dict[team]:
-                            can_assign = False
-                            break
+        # 3. 팀원 수 균등화: 팀원 수가 다를 때만 수행
+        while len(set(team_sizes.values())) > 1 and members_list:
+            min_team = min(team_sizes, key=team_sizes.get)  # 현재 가장 적은 팀원 수의 팀 찾기
+            member = members_list.pop(0)  # 리스트에서 첫 번째 멤버 가져오기
+            team_dict[min_team].append(member)
+            team_sizes[min_team] += 1
+            #print(f"✅ {member} → {min_team} ({min_team[1]}) (균등화 우선 배정)")
 
-                # '분리' 제약사항 확인
-                if member in must_separate:
-                    # 분리해야 하는 멤버가 현재 팀에 있는지 확인
-                    for separate_member in must_separate[member]:
-                        if separate_member in team_dict[team]:
-                            can_assign = False
-                            break
-
-                # 제약사항을 만족하면 팀에 멤버 배정
-                if can_assign:
-                    team_dict[team].append(member)
-                    valid_team_found = True
+        random.shuffle(valid_teams)
+        # 4. 남은 멤버 배정 (순차적으로 모든 멤버 배정)
+        while members_list:
+            for team in valid_teams:
+                if not members_list:
                     break
+                member = members_list.pop(0)
+                team_dict[team].append(member)
+                #print(f"✅ {member} → {team} ({team[1]}) (순차 배정)")
 
-            # 제약사항 때문에 배정할 팀을 찾지 못한 경우
-            if not valid_team_found:
-                # 우선 가능한 팀에 배정하고 나중에 조정
-                for team in sorted(valid_teams, key=lambda x: len(team_dict[x])):
-                    team_dict[team].append(member)
-                    break
+        #print(f"🔹 최종 팀원 수: { {team: len(team_dict[team]) for team in valid_teams} }")
 
-    # 제약사항에 따라 배정 조정
-    # '동반' 제약사항에 따라 조정
-    for member1 in must_together:
-        for member2 in must_together[member1]:
-            member1_team = None
-            member2_team = None
-            # 멤버1과 동반 멤버2의 팀을 찾기
-            for team in team_dict:
-                if member1 in team_dict[team]:
-                    member1_team = team
-                if member2 in team_dict[team]:
-                    member2_team = team
-            # 두 멤버가 서로 다른 팀에 있을 경우
-            if member1_team and member2_team and member1_team != member2_team:
-                # 동반 멤버가 다른 팀에 있을 경우, 같은 팀으로 조정
-                team_dict[member2_team].remove(member2)
-                team_dict[member1_team].append(member2)
-
-    # '분리' 제약사항에 따라 조정
-    for member1 in must_separate:
-        for member2 in must_separate[member1]:
-            for team in team_dict:
-                if member1 in team_dict[team] and member2 in team_dict[team]:
-                    # 같은 팀에 배정되어 있으면 다른 팀으로 이동
-                    for new_team in team_dict:
-                        if new_team != team and len(team_dict[new_team]) < len(team_dict[team]):
-                            team_dict[team].remove(member2)
-                            team_dict[new_team].append(member2)
-                            break
-    print(team_dict)
     return team_dict
+
+
+def check_constraints(team_dict, constraints):
+    violation_count = 0
+
+    for uid1, uid2, rule in constraints:
+        team1 = team2 = None
+
+        # 각 uid가 어느 팀에 속했는지 찾기
+        for team, members in team_dict.items():
+            member_uids = {m[0] for m in members}  # 팀원 uid 추출
+            if uid1 in member_uids:
+                team1 = team
+            if uid2 in member_uids:
+                team2 = team
+
+        # 규칙 위반 확인
+        if rule == "분리" and team1 == team2:
+            #print(f"❌ [위반] {uid1} & {uid2} → 같은 팀에 배정됨! (분리 규칙 위반)")
+            violation_count += 1
+        elif rule == "동반" and team1 != team2:
+            #print(f"❌ [위반] {uid1} & {uid2} → 서로 다른 팀에 배정됨! (동반 규칙 위반)")
+            violation_count += 1
+
+    print(f"\n🔴 총 {violation_count}개의 제약 사항 위반이 발생했습니다.")
+    return violation_count

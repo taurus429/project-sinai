@@ -30,8 +30,8 @@ class DraggableLabel(QLabel):
                 break
         self.setAlignment(Qt.AlignCenter)
         self.setStyleSheet(
-            f"border: 1px solid black; background-color: {bg_color}; color: {cUtil.get_contrast_color(bg_color)};")
-        self.setFixedHeight(25)
+            f"border: 1px solid black; font-size: 15px; font-weight: bold; background-color: {bg_color}; color: {cUtil.get_contrast_color(bg_color)};")
+        self.setFixedHeight(27)
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -56,7 +56,7 @@ class DraggableLabel(QLabel):
 
 
 class TeamWidget(QWidget):
-    def __init__(self, index, *args, **kwargs):
+    def __init__(self, index, start_date, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.index = index
         self.setAcceptDrops(True)
@@ -64,19 +64,20 @@ class TeamWidget(QWidget):
         마을원 = util.Util().마을원전체조회()[1:]
         리더 = [tup for tup in 마을원 if tup[3] == 'L'][index]
         리더튜플 = (리더[0], 리더[2], 리더[1], 리더[3], 리더[5])
-
         # Create a horizontal layout to hold team and statistics layouts
         self.main_layout = QVBoxLayout(self)
         self.middle_layout = QHBoxLayout(self)
         self.bottom_layout = QVBoxLayout(self)
         self.leader_label = QLabel(f"{리더[2]} 사랑", self)
         self.leader_label.setAlignment(Qt.AlignCenter)
-        self.leader_label.setStyleSheet("background-color: #e6e6fa; font-size: 15px; font-weight: bold;")
+        self.leader_label.setStyleSheet("background-color: #e6e6fa; font-size: 20px; font-weight: bold;")
+        self.leader_label.setContentsMargins(10, 10, 10, 10)
+        self.leader_label.setFixedHeight(40)
 
         # Create a layout for team display
         self.team_layout = QVBoxLayout()
         # Create a statistics widget
-        self.statistics_widget = StatisticsWidget(self, 리더튜플)
+        self.statistics_widget = StatisticsWidget(self, 리더튜플, start_date)
         self.middle_layout.addLayout(self.team_layout)
         self.middle_layout.addWidget(self.statistics_widget)
         self.main_layout.addWidget(self.leader_label)
@@ -93,11 +94,56 @@ class TeamWidget(QWidget):
         checkbox_layout = QVBoxLayout()
         for grade in 사랑배치분류:
             checkbox = QCheckBox(grade)
+            checkbox.setStyleSheet("font-size: 15px;")
             self.checkboxes.append(checkbox)  # Store reference to checkbox
             checkbox_layout.addWidget(checkbox)
 
         # Add the checkbox layout above the team label
         self.team_layout.addLayout(checkbox_layout)
+
+    def updateWarning(self, members):
+        # ✅ 기존 bottom_layout의 모든 위젯 삭제
+        while self.bottom_layout.count():
+            item = self.bottom_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()  # 위젯 삭제
+
+        # ✅ 새로운 경고 메시지 추가
+        member_uid = [tup[0] for tup in members]
+        res = util.Util().분리위반조회(member_uid)
+        분리리스트 = [(tup[0], tup[1], "분리") for tup in res]
+        res = util.Util().동반위반조회(member_uid)
+        동반리스트 = [(tup[0], tup[1], "동반") for tup in res]
+        res = util.Util().연속사랑조회(member_uid)
+        연속사랑리스트 = [(tup[0], tup[1], "연속사랑") for tup in res]
+        for r in 분리리스트+동반리스트+연속사랑리스트:
+            # 🌟 경고 아이콘을 QLabel로 추가
+            alert_icon = QLabel()
+            if r[2]!="연속사랑":
+                alert_icon.setPixmap(QPixmap("../asset/icon/icon_danger.png").scaled(15, 15, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            else:
+                alert_icon.setPixmap(QPixmap("../asset/icon/icon_warning.png").scaled(15, 15, Qt.KeepAspectRatio,
+                                                                                     Qt.SmoothTransformation))
+            # 🌟 텍스트 라벨 생성
+            text_label = QLabel(f"[{r[2]}] {r[0]} {r[1]}")
+            text_label.setFixedHeight(20)
+            if r[2]!="연속사랑":
+                text_label.setStyleSheet("color: darkred; font-weight: bold;")
+            else:
+                text_label.setStyleSheet("color: #997103; font-weight: bold;")
+
+            # 🌟 가로 레이아웃(QHBoxLayout) 생성하여 추가
+            warning_layout = QHBoxLayout()
+            warning_layout.setContentsMargins(0, 0, 0, 0)
+            warning_layout.addWidget(alert_icon)
+            warning_layout.addWidget(text_label)
+            warning_layout.addStretch()  # 오른쪽 정렬 방지
+
+            # 🌟 QWidget을 만들어 bottom_layout에 추가
+            warning_widget = QWidget()
+            warning_widget.setLayout(warning_layout)
+            warning_widget.setFixedHeight(23)
+            self.bottom_layout.addWidget(warning_widget)
 
     def getIndex(self):
         return self.index
@@ -137,6 +183,7 @@ class TeamAllocator(QWidget):
         main_layout = QVBoxLayout()
         date_layout = QHBoxLayout()
         label = QLabel("통계 기준일:")
+        label.setStyleSheet("font-weight: bold; font-size: 15px;")
 
         텀 = self.util.텀조회()[1:]
         dates = []
@@ -161,8 +208,8 @@ class TeamAllocator(QWidget):
         main_layout.addWidget(self.current_member_label, alignment=Qt.AlignCenter)
 
         마을원 = self.util.마을원전체조회()[1:]
-        리더리스트 = [tup for tup in 마을원 if tup[3] == 'L']
-        self.teams = [[] for _ in range(len(리더리스트))]
+        self.리더리스트 = [tup for tup in 마을원 if tup[3] == 'L']
+        self.teams = [[] for _ in range(len(self.리더리스트))]
 
         # Team area layout
         self.team_layouts = []
@@ -170,9 +217,9 @@ class TeamAllocator(QWidget):
         self.current_index = 0
 
 
-        for i, 리더 in enumerate(리더리스트):
+        for i, 리더 in enumerate(self.리더리스트):
             # Use TeamWidget's new main_layout for organizing team and statistics
-            team_widget = TeamWidget(i, self)
+            team_widget = TeamWidget(i, self.start_date_combo.currentText(), self)
 
             team_label = QLabel("     ", self)
             team_label.setAlignment(Qt.AlignCenter)
@@ -184,7 +231,7 @@ class TeamAllocator(QWidget):
 
             self.team_layouts.append(team_widget)
             team_area.addWidget(team_widget)
-
+        team_area.setAlignment(Qt.AlignmentFlag.AlignTop)
         main_layout.addLayout(team_area)
 
         # Manage list button at the top
@@ -211,6 +258,12 @@ class TeamAllocator(QWidget):
         # Initialize timer for assigning members
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.assignMember)
+        # 콤보박스 선택 값 변경 감지 → update_selected_date 호출
+        self.start_date_combo.currentTextChanged.connect(self.updateDate)
+
+    def updateDate(self):
+        for i in range(len(self.teams)):
+            self.updateTeamLayout(i)
 
     def openListManager(self):
         self.list_manager_window.show()
@@ -235,27 +288,35 @@ class TeamAllocator(QWidget):
         # Disable the "Random 배치 시작" button
         # self.assign_button.setDisabled(True)
 
-        assign_result = assign_members(self.members, team_infos)
+        self.assign_result = assign_members(self.members, team_infos)
         #TODO
         self.current_index = 0
         self.timer.start(500)
 
     def assignMember(self):
         # Assign members randomly to teams
+        #random.shuffle(self.members)
+        self.members = sorted(self.members, key=lambda x: x[3])
+        리더 = [(leader[0], leader[2], leader[1], leader[3], leader[5]) for leader in self.리더리스트]
         if self.current_index < len(self.members):
             member = self.members[self.current_index]
-            self.current_member_label.setText(member[1])  # Display the name
-            self.animateAssignment(member)
+            leader = None
+            team_index = None
+            for key, members in self.assign_result.items():
+                if member in members:
+                    leader = key
+                    team_index = 리더.index(leader)
+                    break
+            if team_index is not None:
+                self.current_member_label.setText(member[1])  # Display the name
+                self.animateAssignment(member, team_index)
             self.current_index += 1
         else:
             # Stop the timer when all members have been assigned
             self.timer.stop()
             self.current_member_label.setText("배치 완료")
 
-    def animateAssignment(self, member):
-        # Select a random team
-        team_index = random.randint(0, len(self.teams) - 1)
-
+    def animateAssignment(self, member, team_index):
         # Create a DraggableLabel for the member
         member_label = DraggableLabel(member, self)
 
@@ -336,7 +397,8 @@ class TeamAllocator(QWidget):
         for member_label in self.teams[team_index]:
             team_layout.addWidget(member_label)
             members.append(member_label.member_tuple)
-        self.team_layouts[team_index].statistics_widget.updateCharts(members)
+        self.team_layouts[team_index].statistics_widget.updateCharts(members, self.start_date_combo.currentText())
+        self.team_layouts[team_index].updateWarning(members)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
@@ -28,7 +29,7 @@ for g in 구분데이터:
     grade_colors[g[1]] = g[2]
 
 class StatisticsWidget(QWidget):
-    def __init__(self, parent=None, 리더=None):
+    def __init__(self, parent=None, 리더=None, startdate=None):
         super().__init__(parent)
         self.리더 = 리더
         self.layout = QVBoxLayout(self)
@@ -37,11 +38,19 @@ class StatisticsWidget(QWidget):
         self.layout.addWidget(self.stats_label)
         self.figures = []
         self.canvases = []
-        self.count_label = QLabel("사랑원: 0명")
-        self.sunday_label = QLabel("예배출석: 0명")
-        self.sarang_label = QLabel("사랑모임: 0명")
+        self.count_label = QLabel("사랑원: 1명")
+        res = util.Util().예배사랑모임평균조회(시작날짜=startdate, 사랑원리스트=[리더[0]])
+        self.sunday_label = QLabel(f"예배출석: {res[0]}명")
+        self.sarang_label = QLabel(f"사랑모임: {res[1]}명")
+        font = QFont()
+        font.setPointSize(12)  # 글자 크기
+
+        self.count_label.setFont(font)
+        self.sunday_label.setFont(font)
+        self.sarang_label.setFont(font)
         self.initCharts()
-        self.setMinimumWidth(130)
+        self.setMinimumWidth(160)
+        self.setFixedHeight(600)
 
     def initCharts(self):
         figure = Figure(figsize=(5, 5), tight_layout=True)
@@ -138,8 +147,10 @@ class StatisticsWidget(QWidget):
         canvas = axes.figure.canvas
         canvas.mpl_connect("motion_notify_event", hover)
 
-    def updateCharts(self, members):
+    def updateCharts(self, members=None, startdate=None):
         members.append(self.리더)
+        사랑원리스트 = list(map(lambda tup: tup[0], members))
+        res = util.Util().예배사랑모임평균조회(시작날짜=startdate, 사랑원리스트=사랑원리스트)
         age_counts = {}
         grade_counts = {}
         gender_counts = {}
@@ -165,7 +176,15 @@ class StatisticsWidget(QWidget):
         self.updatePieChart(self.figures[0].axes[0], gender_counts, "gender")
         self.updatePieChart(self.figures[1].axes[0], age_counts, "age")
         self.updatePieChart(self.figures[2].axes[0], grade_counts, "grade")
-        self.count_label.setText(f"사랑원: {len(members)-1}명")
+        self.count_label.setText(f"사랑원: {len(members)}명")
+        self.sunday_label.setText(f"예배출석: {res[0]}명")
+        self.sarang_label.setText(f"사랑모임: {res[1]}명")
+        font = QFont()
+        font.setPointSize(12)  # 글자 크기
+
+        self.count_label.setFont(font)
+        self.sunday_label.setFont(font)
+        self.sarang_label.setFont(font)
 
     def updatePieChart(self, ax, data, category):
         data = {k: data[k] for k in sorted(data)}
