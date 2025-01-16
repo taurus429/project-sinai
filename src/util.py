@@ -182,13 +182,13 @@ class Util:
             self.init()
             print("db가 초기화 되었습니다.")
 
-    def 출석파일저장(self, file_paths):
+    def 출석파일저장(self, file_paths, progress_callback=None, log_callback=None):
         time = [(0, 12), (0, 15), (0, 17), (-2, 21)]
         code2desc, desc2code = self.모임코드조회()
-        for file_path in file_paths:
+        total_files = len(file_paths)
 
+        for idx, file_path in enumerate(file_paths):
             if file_path:
-                print(file_path)
                 if file_path.lower().endswith(('.xls', '.xlsx')):
                     try:
                         # 엑셀 파일 읽기
@@ -204,6 +204,16 @@ class Util:
                         print(f"예상치 못한 오류가 발생했습니다: {e}")
                 else:
                     raise ValueError("Unsupported file type")
+
+                # 파일 처리 후 진행 상태 업데이트
+                if progress_callback:
+                    progress = int(((idx + 1) / total_files) * 100)
+                    progress_callback(progress)
+
+                if log_callback:
+                    file_name = file_path.split("\\")[-1]
+                    log = f"{file_name} 열기 완료"
+                    log_callback(log, "error")
 
                 year = int(df.iloc[0, 0].split()[0][:4])
 
