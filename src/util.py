@@ -1290,10 +1290,10 @@ WHERE 마을원.uid = ln.사랑원_uid;
 
             # SQL 쿼리를 사용하여 yymmdd의 날짜로부터 7일 이내의 모든 생일자를 추출
             query = f"""
-                        SELECT 생년, strftime('%m%d', 생년월일) AS 생일, 이름 FROM birthday
-                        WHERE 
-                            생일 BETWEEN '{base_mmdd}' AND '{end_mmdd}'
-                        ORDER BY 생일 ASC
+                        SELECT 또래, strftime('%m%d', 생년월일) AS 생일, 이름 
+                        FROM 마을원
+                        WHERE strftime('%m%d', 생년월일) BETWEEN '{base_mmdd}' AND '{end_mmdd}'
+                        ORDER BY 생일 ASC;
                         """
             self.cursor.execute(query)
 
@@ -1302,8 +1302,9 @@ WHERE 마을원.uid = ln.사랑원_uid;
             return None
         res = self.cursor.fetchall()
         birthday_list = []
-        for index, row in res.iterrows():
-            birthday_list.append(f"{row['생년']}또래 {row['이름']}({int(row['생일'][2:])}일)")
+        for row in res:
+            또래, 생일, 이름 = row  # 튜플 언패킹
+            birthday_list.append(f"{또래}또래 {이름}({int(생일[2:])}일)")
 
         return birthday_list
 
