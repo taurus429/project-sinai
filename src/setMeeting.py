@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QColor, QPainter, QPainterPath
 from PyQt5.QtCore import Qt, QRectF
-from util import Util
+from src.util import Util
 
 class CustomLabel(QLabel):
     def __init__(self, text='', bgcolor='#FFFFFF', fgcolor='#000000', parent=None):

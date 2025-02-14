@@ -1,5 +1,5 @@
 # detailed_info_table_widget.py
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView
 
 
 class DetailedInfoTableWidget(QWidget):
@@ -14,8 +14,12 @@ class DetailedInfoTableWidget(QWidget):
         # Create a QTableWidget for detailed info
         self.table = QTableWidget()
         self.table.setColumnCount(4)  # 4 columns
-        self.table.setHorizontalHeaderLabels(["컬럼명1", "데이터1", "컬럼명2", "데이터2"])
-        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setHorizontalHeaderLabels(["항목", "데이터", "항목", "데이터"])
+
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)  # Fifth column stretching
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)  # Second column stretching
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)  # Third column stretching
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)  # Fourth column stretching
 
         # Set header background color
         self.table.horizontalHeader().setStyleSheet("QHeaderView::section { background-color: #f0f0f0; }")

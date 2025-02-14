@@ -3,8 +3,8 @@ import sys
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QDateTimeEdit, QComboBox, QLineEdit, QPushButton, QApplication
 from PyQt5.QtGui import QColor, QStandardItem, QStandardItemModel
 from PyQt5.QtCore import QDateTime
-import util
-from attendees_selection_dialog import AttendeesSelectionDialog
+from src import util
+from src.attendees_selection_dialog import AttendeesSelectionDialog
 
 class AddMeetingWindow(QDialog):
     def __init__(self):

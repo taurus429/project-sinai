@@ -134,7 +134,7 @@ class StudentListWindow(QMainWindow):
         self.setMenuBar(self.menu_bar)
 
         file_menu = self.menu_bar.addMenu('파일')
-        file_submenu1 = file_menu.addAction('파일 서브메뉴 1')
+        file_submenu1 = file_menu.addAction('마을원 명단 등록')
         file_submenu2 = file_menu.addAction('파일 서브메뉴 2')
 
         settings_menu = self.menu_bar.addMenu('설정')

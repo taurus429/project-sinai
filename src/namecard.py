@@ -4,7 +4,10 @@ from PyQt5.QtGui import QPixmap, QFontDatabase
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QApplication
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont, QFontMetrics
 from PyQt5.QtCore import QRectF, Qt
-import font_util, util, medal, trophy
+import src.font_util as font_util
+import src.util as util
+import src.medal as medal
+import src.trophy as trophy
 
 class TitleWidget(QWidget):
     def __init__(self, title):

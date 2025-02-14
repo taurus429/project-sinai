@@ -2,11 +2,11 @@ import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSplitter, QApplication, QScrollArea
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFontDatabase, QFont
-import namecard, font_util
+from src import namecard, font_util
 from src import util, 날짜유틸
-from statistics_table_widget import StatisticsTableWidget  # 통계 테이블 위젯 가져오기
-from week_info_widget import WeekInfoWidget  # 주간 정보 위젯 가져오기
-from detailed_info_table_widget import DetailedInfoTableWidget  # DetailedInfoTableWidget 가져오기
+from src.statistics_table_widget import StatisticsTableWidget  # 통계 테이블 위젯 가져오기
+from src.week_info_widget import WeekInfoWidget  # 주간 정보 위젯 가져오기
+from src.detailed_info_table_widget import DetailedInfoTableWidget  # DetailedInfoTableWidget 가져오기
 
 
 class StudentDetailsWindow(QWidget):

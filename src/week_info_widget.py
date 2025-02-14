@@ -1,6 +1,6 @@
 # week_info_widget.py
 from PyQt5.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QGroupBox, QHBoxLayout, QSpacerItem, QSizePolicy
-from roundedRectLabel import RoundedRectLabel
+from src.roundedRectLabel import RoundedRectLabel
 
 
 class WeekInfoWidget(QScrollArea):

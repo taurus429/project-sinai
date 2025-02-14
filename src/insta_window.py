@@ -6,24 +6,40 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QDate
 from PyQt5.QtGui import QFont, QFontDatabase, QIcon
-import util
-import setting as s
+from src import util
+from src import setting as s
+from datetime import datetime
 
 class CalendarPopup(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        # Create a QCalendarWidget instance
         self.calendar = QCalendarWidget()
+
+        # Set the grid lines to be visible
         self.calendar.setGridVisible(True)
+
+        # Set the current date as the selected date
         self.calendar.setSelectedDate(QDate.currentDate())
+
+        # Hide the vertical header (week numbers)
+        self.calendar.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
+
+        # Connect the calendar's clicked signal to the date selection handler
         self.calendar.clicked.connect(self.on_date_selected)
 
+        # Set up the layout
         layout = QVBoxLayout()
         layout.addWidget(self.calendar)
         self.setLayout(layout)
+
+        # Set the window title and modality
         self.setWindowTitle('날짜 선택')
         self.setModal(True)
 
     def on_date_selected(self, date):
+        # Store the selected date and close the dialog
         self.selected_date = date
         self.accept()
 
@@ -34,6 +50,7 @@ class TextGeneratorApp(QMainWindow):
 
         self.setting = s.Setting()
         self.settings = self.setting.get_settings()
+        self.util = util.Util()
 
         if 'darkmode' in self.settings.keys():
             self.dark_mode = self.settings["darkmode"]
@@ -118,29 +135,6 @@ class TextGeneratorApp(QMainWindow):
         self.birthday_label = QLabel('생일자 파일')
         self.birthday_layout = QWidget()
         file_layout = QHBoxLayout()
-
-        # 파일 첨부용 버튼
-        attach_file_button = QPushButton('파일 첨부')
-        attach_file_button.clicked.connect(self.attach_file)
-        self.attach_file_text = QLabel('파일없음')
-        file_layout.addWidget(self.attach_file_text)
-        file_layout.addWidget(attach_file_button)
-
-        self.birthday_layout.setLayout(file_layout)
-
-        # 파일 첨부용 버튼
-
-        self.birthday_label2 = QLabel('마을원 등록')
-        self.birthday_layout2 = QWidget()
-        file_layout2 = QHBoxLayout()
-
-        attach_file_button2 = QPushButton('파일 첨부')
-        attach_file_button2.clicked.connect(self.attach_file2)
-        self.attach_file_text2 = QLabel('파일없음')
-        file_layout2.addWidget(self.attach_file_text2)
-        file_layout2.addWidget(attach_file_button2)
-
-        self.birthday_layout2.setLayout(file_layout2)
 
         # 이번 주 기도인도
         self.pray_label = QLabel('이번 주 기도 인도')
@@ -241,10 +235,6 @@ class TextGeneratorApp(QMainWindow):
         layout.addWidget(self.result_label, 0, 2)
         layout.addWidget(self.result_text, 1, 2, 11, 2)
         layout.addWidget(self.copy_button, 12, 2, 1, 2)
-        layout.addWidget(self.birthday_label, 13, 0)
-        layout.addWidget(self.birthday_layout, 13, 1)
-        layout.addWidget(self.birthday_label2, 14, 0)
-        layout.addWidget(self.birthday_layout2, 14, 1)
 
         central_widget.setLayout(layout)
 
@@ -310,7 +300,7 @@ class TextGeneratorApp(QMainWindow):
                     }
                 """
         self.light_stylesheet = ""
-
+        self.birthday_list = []
         # 초기 테마 설정
         self.set_theme()
 
@@ -398,14 +388,19 @@ class TextGeneratorApp(QMainWindow):
         self.schedule_list.remove(text_widget)
 
     def generate_text(self):
-        date = self.date_edit.text()
+        date_str = self.date_edit.text()
         text_type = self.type_combo.currentText()
         title = self.title_edit.text()
         scripture = self.scripture_edit.text()
         content = self.content_edit.toPlainText()
         pray = self.pray_combo.currentText()
+        weekday = datetime.strptime(date_str, "%Y-%m-%d").date().weekday()
+        week = ['월', '화', '수', '목', '금', '토', '일']
+        if text_type in ['마하나임 예배', '더원 예배'] and weekday != 6:
+            QMessageBox.warning(self, '요일 오입력 방지', f'{text_type} 날짜가 {week[weekday]}요일로 입력되어있습니다.')
 
-        result = f"{date[2:4]}.{date[5:7]}.{date[8:10]} {text_type}\n\n"
+        formatted_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%y.%m.%d")
+        result = f"{formatted_date} {text_type}\n\n"
         if title:
             result += f"[{title}] {scripture}\n\n"
         result += f"{content}\n\n"
@@ -425,6 +420,15 @@ class TextGeneratorApp(QMainWindow):
         result += f"📣 이번 주 기도인도: {pray}\n"
         if self.outing_radio1.isChecked():
             result += "❗️ 더원 예배 뒤에 아웃팅 있습니다!\n"
+
+        formatted_date = datetime.strptime(date_str, "%Y-%m-%d").strftime("%y%m%d")
+        self.birthday_list = self.util.이번주생일자조회(formatted_date)
+        if len(self.birthday_list) != 0:
+            result += "🎂 이번 주 생일자: "
+            for b in self.birthday_list:
+                result += f"{b}, "
+            result = result[:-2]
+            result += "\n"
 
         if self.qt_check1 or self.qt_check2 or self.qt_check3 or self.qt_check4 or self.qt_check5:
             day = ""
@@ -450,40 +454,6 @@ class TextGeneratorApp(QMainWindow):
     def copy_result_to_clipboard(self):
         clipboard = QApplication.clipboard()
         clipboard.setText(self.result_text.toPlainText())
-
-    def attach_file(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog  # macOS에서 필수: 네이티브 파일 대화상자 사용 안 함
-        file_names, _ = QFileDialog.getOpenFileNames(self, "파일 첨부", "", "Excel Files (*.xls *.xlsx)",
-                                                   options=options)
-        # 파일을 저장하는 함수 호출
-        success = util.출석파일저장(file_names)
-        if success:
-            QMessageBox.information(self, "성공", "파일이 성공적으로 저장되었습니다.")
-            self.setting.set_settings("birthday_file", util.count_birthday_db())
-        else:
-            QMessageBox.warning(self, "오류", "파일 저장 중 오류가 발생했습니다.")
-
-
-    def attach_file2(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog  # macOS에서 필수: 네이티브 파일 대화상자 사용 안 함
-        file_name, _ = QFileDialog.getOpenFileName(self, "파일 첨부", "", "Excel Files (*.xls *.xlsx)",
-                                                   options=options)
-        if file_name:
-            # 확장자 확인 (csv 또는 excel 파일만 허용)
-            if file_name.lower().endswith(('.csv', '.xls', '.xlsx')):
-                self.attach_file_text.setText(file_name)
-                # 파일을 저장하는 함수 호출
-                success = util.마을원저장(file_name)
-                if success:
-                    QMessageBox.information(self, "성공", "파일이 성공적으로 저장되었습니다.")
-                    self.setting.set_settings("birthday_file", util.count_birthday_db())
-                else:
-                    QMessageBox.warning(self, "오류", "파일 저장 중 오류가 발생했습니다.")
-
-            else:
-                QMessageBox.warning(self, "잘못된 파일 형식", "CSV 파일 또는 Excel 파일만 첨부할 수 있습니다.")
 
 
 if __name__ == '__main__':
